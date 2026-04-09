@@ -39,11 +39,18 @@ source "$FORBUT_INSTALL_DIR/lib/utils.sh"
 # ---------------------------------------------------------------------------
 # Export FORBUT_* variables (backwards-compat migration)
 # ---------------------------------------------------------------------------
-while IFS= read -r var; do
-    if [[ -n "$var" && "${!var+set}" == "set" ]]; then
+if [[ -n "${ZSH_VERSION:-}" ]]; then
+    # zsh: use parameter expansion flags to list matching variables
+    for var in ${(k)parameters[(I)FORBUT_*]}; do
         export "$var"
-    fi
-done < <(compgen -v FORBUT_ 2>/dev/null || true)
+    done
+elif [[ -n "${BASH_VERSION:-}" ]]; then
+    while IFS= read -r var; do
+        if [[ -n "$var" ]]; then
+            export "$var"
+        fi
+    done < <(compgen -v FORBUT_ 2>/dev/null || true)
+fi
 
 # ---------------------------------------------------------------------------
 # Shell function registration
