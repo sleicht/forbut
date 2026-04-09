@@ -11,9 +11,24 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Resolve installation directory (relative to this script)
 # ---------------------------------------------------------------------------
-FORBUT_INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Follow symlinks to find the real location of this script, then go up one
+# level to get the install dir. This is needed because install.sh symlinks
+# ~/.local/bin/forbut -> ~/.local/share/forbut/bin/forbut.
+_forbut_resolve_script() {
+    local src="${BASH_SOURCE[0]}"
+    while [[ -L "$src" ]]; do
+        local dir
+        dir="$(cd "$(dirname "$src")" && pwd)"
+        src="$(readlink "$src")"
+        # If readlink returned a relative path, resolve it from the dir
+        [[ "$src" != /* ]] && src="$dir/$src"
+    done
+    echo "$src"
+}
+FORBUT_REAL_PATH="$(_forbut_resolve_script)"
+FORBUT_INSTALL_DIR="$(cd "$(dirname "$FORBUT_REAL_PATH")/.." && pwd)"
 export FORBUT_INSTALL_DIR
-FORBUT="${BASH_SOURCE[0]}"
+FORBUT="$FORBUT_REAL_PATH"
 
 # ---------------------------------------------------------------------------
 # Source shared utilities
