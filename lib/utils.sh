@@ -159,21 +159,13 @@ _forbut_preview_pager() {
 #   2. forbut built-in defaults    (ANSI, height, keybindings, preview layout)
 #   3. $FORBUT_FZF_DEFAULT_OPTS    (user's forbut-specific overrides)
 _forbut_fzf_defaults() {
-    local builtin_opts
-    builtin_opts=$(cat <<'EOF'
---ansi
---height=80%
---border
---reverse
---info=inline
---header-first
---bind=ctrl-d:preview-page-down
---bind=ctrl-u:preview-page-up
---bind=ctrl-/:toggle-preview
---preview-window=right:55%:wrap
---color=header:italic
-EOF
-)
+    local builtin_opts="--ansi --height=80% --border --reverse --info=inline"
+    builtin_opts+=" --header-first"
+    builtin_opts+=" --bind=ctrl-d:preview-page-down"
+    builtin_opts+=" --bind=ctrl-u:preview-page-up"
+    builtin_opts+=" --bind=ctrl-/:toggle-preview"
+    builtin_opts+=" --preview-window=right:55%:wrap"
+    builtin_opts+=" --color=header:italic"
     echo "${FZF_DEFAULT_OPTS:-} $builtin_opts ${FORBUT_FZF_DEFAULT_OPTS:-}"
 }
 
