@@ -103,9 +103,9 @@ _forbut_unassigned_file_list() {
         done
     else
         # Fallback: git status for non-GitButler repos
-        git diff --name-status 2>/dev/null | while IFS=$'\t' read -r status file; do
-            [[ -z "$status" ]] && continue
-            printf '%s  [%s]  %s\n' "$file" "$status" "$file"
+        git diff --name-status 2>/dev/null | while IFS=$'\t' read -r fstat file; do
+            [[ -z "$fstat" ]] && continue
+            printf '%s  [%s]  %s\n' "$file" "$fstat" "$file"
         done
     fi
 }

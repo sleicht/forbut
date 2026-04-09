@@ -51,19 +51,25 @@ _forbut_diff_file_list() {
     fi
 
     # Try but status -f -j first (requires GitButler project + jq)
-    if _forbut_has_jq && but status -f -j 2>/dev/null | jq -e '.stacks' &>/dev/null; then
-        _forbut_diff_but_json
-    else
-        # Fallback: git diff for non-GitButler repos
-        _forbut_diff_git_fallback
+    if _forbut_has_jq; then
+        local _but_json
+        _but_json=$(but status -f -j 2>/dev/null)
+        if echo "$_but_json" | jq -e '.stacks' &>/dev/null; then
+            _forbut_diff_but_json "$_but_json"
+            return
+        fi
     fi
+
+    # Fallback: git diff for non-GitButler repos
+    _forbut_diff_git_fallback
 }
 
 # ---------------------------------------------------------------------------
 # Primary: parse but status -f -j for all file changes
 # ---------------------------------------------------------------------------
 _forbut_diff_but_json() {
-    but status -f -j 2>/dev/null | jq -r '
+    local json="$1"
+    echo "$json" | jq -r '
         # Unassigned changes
         (.unassignedChanges // [] | .[] |
             "\(.cliId)\t\(.changeType)\t\(.filePath)\tunassigned"
@@ -108,10 +114,10 @@ _forbut_diff_target_list() {
         but diff "$target" -j 2>/dev/null | jq -r '
             .changes // [] | .[] |
             "\(.id)\t\(.status)\t\(.path)"
-        ' 2>/dev/null | while IFS=$'\t' read -r id status path; do
+        ' 2>/dev/null | while IFS=$'\t' read -r id fstat path; do
             [[ -z "$id" ]] && continue
             local status_marker color
-            case "$status" in
+            case "$fstat" in
                 modified) status_marker="M"; color="$FORBUT_COLOR_YELLOW" ;;
                 added)    status_marker="A"; color="$FORBUT_COLOR_GREEN" ;;
                 removed)  status_marker="D"; color="$FORBUT_COLOR_RED" ;;
@@ -133,14 +139,14 @@ _forbut_diff_git_fallback() {
     {
         git diff --name-status 2>/dev/null
         git diff --name-status --cached 2>/dev/null
-    } | sort -u | while IFS=$'\t' read -r status file rest; do
-        [[ -z "$status" ]] && continue
-        case "$status" in
+    } | sort -u | while IFS=$'\t' read -r fstat file rest; do
+        [[ -z "$fstat" ]] && continue
+        case "$fstat" in
             M)  printf '%s  %s[M]%s  %s\n' "$file" "$FORBUT_COLOR_YELLOW" "$FORBUT_COLOR_RESET" "$file" ;;
             A)  printf '%s  %s[A]%s  %s\n' "$file" "$FORBUT_COLOR_GREEN" "$FORBUT_COLOR_RESET" "$file" ;;
             D)  printf '%s  %s[D]%s  %s\n' "$file" "$FORBUT_COLOR_RED" "$FORBUT_COLOR_RESET" "$file" ;;
-            R*) printf '%s  %s[%s]%s  %s -> %s\n' "$file" "$FORBUT_COLOR_CYAN" "$status" "$FORBUT_COLOR_RESET" "$file" "${rest:-}" ;;
-            *)  printf '%s  [%s]  %s\n' "$file" "$status" "$file" ;;
+            R*) printf '%s  %s[%s]%s  %s -> %s\n' "$file" "$FORBUT_COLOR_CYAN" "$fstat" "$FORBUT_COLOR_RESET" "$file" "${rest:-}" ;;
+            *)  printf '%s  [%s]  %s\n' "$file" "$fstat" "$file" ;;
         esac
     done
 }
