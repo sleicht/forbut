@@ -19,13 +19,12 @@ _forbut_cmd_discard() {
     local selected
     selected=$(
         but status 2>/dev/null |
-        _forbut_fzf \
+        _forbut_fzf FORBUT_DISCARD_FZF_OPTS \
             --header="$header" \
             --preview="$preview_cmd" \
             --multi \
             --bind="ctrl-a:select-all" \
-            --color="header:red:italic" \
-            ${FORBUT_DISCARD_FZF_OPTS:-}
+            --color="header:red:italic"
     ) || return 0
 
     if [[ -z "$selected" ]]; then

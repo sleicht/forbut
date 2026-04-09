@@ -21,12 +21,11 @@ _forbut_cmd_assign() {
     local selected_hunks
     selected_hunks=$(
         but status 2>/dev/null |
-        _forbut_fzf \
+        _forbut_fzf FORBUT_ASSIGN_FZF_OPTS \
             --header="$header" \
             --preview="$preview_cmd" \
             --multi \
-            --bind="ctrl-a:select-all" \
-            ${FORBUT_ASSIGN_FZF_OPTS:-}
+            --bind="ctrl-a:select-all"
     ) || return 0
 
     if [[ -z "$selected_hunks" ]]; then
@@ -50,11 +49,10 @@ _forbut_cmd_assign() {
     local target_branch
     target_branch=$(
         but branch list --all 2>/dev/null |
-        _forbut_fzf \
+        _forbut_fzf FORBUT_ASSIGN_BRANCH_FZF_OPTS \
             --header="$branch_header" \
             --preview="$FORBUT _preview switch_branch {1}" \
-            --no-multi \
-            ${FORBUT_ASSIGN_BRANCH_FZF_OPTS:-}
+            --no-multi
     ) || return 0
 
     local branch_id

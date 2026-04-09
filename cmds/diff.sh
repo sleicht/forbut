@@ -31,12 +31,11 @@ _forbut_cmd_diff() {
     local selected
     selected=$(
         eval "$diff_source" |
-        _forbut_fzf \
+        _forbut_fzf FORBUT_DIFF_FZF_OPTS \
             --header="$header" \
             --preview="$preview_cmd" \
             --bind="enter:execute(but diff {1} 2>/dev/null | $pager || git diff --color=always -- {-1} | $pager)" \
-            --no-sort \
-            ${FORBUT_DIFF_FZF_OPTS:-}
+            --no-sort
     ) || return 0
 }
 

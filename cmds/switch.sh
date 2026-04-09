@@ -17,12 +17,11 @@ _forbut_cmd_switch() {
     local selected
     selected=$(
         but branch list --all 2>/dev/null |
-        _forbut_fzf \
+        _forbut_fzf FORBUT_SWITCH_FZF_OPTS \
             --header="$header" \
             --preview="$preview_cmd" \
             --bind="ctrl-x:execute-silent(but unapply {1} 2>/dev/null)+reload(but branch list --all 2>/dev/null)" \
-            --bind="enter:accept" \
-            ${FORBUT_SWITCH_FZF_OPTS:-}
+            --bind="enter:accept"
     ) || return 0
 
     # Extract the branch short code (first field)

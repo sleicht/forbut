@@ -170,10 +170,18 @@ _forbut_fzf_defaults() {
 }
 
 # Run fzf with forbut defaults + per-command options.
-# Usage: _forbut_fzf [extra-fzf-opts...]
-# Input is expected on stdin.
+# Usage: _forbut_fzf <FORBUT_CMD_FZF_OPTS_VAR> [extra-fzf-opts...]
+# The first argument is the NAME of an env var holding per-command fzf options
+# (e.g., "FORBUT_SWITCH_FZF_OPTS"). Pass "" to skip.
+# Remaining arguments are passed directly to fzf as proper args, preserving
+# quoting for values with spaces (--header, --preview, --bind, etc.).
 _forbut_fzf() {
-    FZF_DEFAULT_OPTS="$(_forbut_fzf_defaults) $*" fzf
+    local _cmd_opts_var="$1"; shift
+    local _cmd_opts=""
+    if [[ -n "$_cmd_opts_var" ]]; then
+        _cmd_opts="${!_cmd_opts_var:-}"
+    fi
+    FZF_DEFAULT_OPTS="$(_forbut_fzf_defaults) $_cmd_opts" fzf "$@"
     local exit_code=$?
     # Treat ctrl-c / esc (130) as graceful exit
     [[ $exit_code -eq 130 ]] && return 0

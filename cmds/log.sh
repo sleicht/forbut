@@ -32,13 +32,12 @@ _forbut_cmd_log() {
     local selected
     selected=$(
         eval "$log_source" |
-        _forbut_fzf \
+        _forbut_fzf FORBUT_LOG_FZF_OPTS \
             --header="$header" \
             --preview="$preview_cmd" \
             --bind="ctrl-y:execute-silent(echo {1} | tr -d '[:space:]' | pbcopy 2>/dev/null || echo {1} | xclip -selection clipboard 2>/dev/null)" \
             --bind="enter:execute(but show {1} 2>/dev/null | $pager || git show --color=always {1} | $pager)" \
-            --no-sort \
-            ${FORBUT_LOG_FZF_OPTS:-}
+            --no-sort
     ) || return 0
 }
 
