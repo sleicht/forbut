@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+# bin/forbut — standalone CLI entry point for forbut
+# Can be used directly:  forbut switch
+# Or via git:            git forbut switch  (if on PATH)
+#
+# This file contains the command dispatch and all core logic.
+# Shell functions in forbut.sh delegate here.
+
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# Resolve installation directory (relative to this script)
+# ---------------------------------------------------------------------------
+FORBUT_INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export FORBUT_INSTALL_DIR
+FORBUT="${BASH_SOURCE[0]}"
+
+# ---------------------------------------------------------------------------
+# Source shared utilities
+# ---------------------------------------------------------------------------
+# shellcheck source=../lib/utils.sh
+source "$FORBUT_INSTALL_DIR/lib/utils.sh"
+
+# ---------------------------------------------------------------------------
+# Source command implementations
+# ---------------------------------------------------------------------------
+for cmd_file in "$FORBUT_INSTALL_DIR"/cmds/*.sh; do
+    [[ -f "$cmd_file" ]] && source "$cmd_file"
+done
+
+# ---------------------------------------------------------------------------
+# Usage / help
+# ---------------------------------------------------------------------------
+_forbut_usage() {
+    cat <<EOF
+${FORBUT_COLOR_BOLD}forbut${FORBUT_COLOR_RESET} v${FORBUT_VERSION} — fuzzy UX for GitButler's but CLI
+
+${FORBUT_COLOR_BOLD}USAGE${FORBUT_COLOR_RESET}
+    forbut <command> [options]
+
+${FORBUT_COLOR_BOLD}MVP COMMANDS (v0.1)${FORBUT_COLOR_RESET}
+    switch      Fuzzy-switch between virtual branches/stacks
+    log         Browse commit log across current stack with diff preview
+    diff        Browse changed files with inline diff preview
+    assign      Fuzzy-select uncommitted hunks and assign to a stack
+    discard     Fuzzy-select hunks/files to discard
+
+${FORBUT_COLOR_BOLD}PLANNED COMMANDS (v0.2+)${FORBUT_COLOR_RESET}
+    reorder     Interactively reorder commits within a stack
+
+${FORBUT_COLOR_BOLD}INTERNAL COMMANDS${FORBUT_COLOR_RESET}
+    _preview    Preview dispatcher (used by fzf callbacks)
+
+${FORBUT_COLOR_BOLD}OPTIONS${FORBUT_COLOR_RESET}
+    -h, --help      Show this help
+    -v, --version   Show version
+
+${FORBUT_COLOR_BOLD}ENVIRONMENT${FORBUT_COLOR_RESET}
+    FORBUT_PAGER              Override the diff pager (default: delta or git core.pager)
+    FORBUT_PREVIEW_PAGER      Override the fzf preview pager
+    FORBUT_FZF_DEFAULT_OPTS   Extra fzf options applied to all commands
+    FORBUT_NO_ALIASES         Set to 1 to disable alias registration
+    FORBUT_*_FZF_OPTS         Per-command fzf overrides (e.g., FORBUT_LOG_FZF_OPTS)
+
+${FORBUT_COLOR_BOLD}ALIASES${FORBUT_COLOR_RESET} (when sourcing forbut.sh)
+    fbs   forbut::switch
+    fbl   forbut::log
+    fbd   forbut::diff
+    fba   forbut::assign
+    fbD   forbut::discard
+    fbr   forbut::reorder
+
+See https://github.com/user/forbut for full documentation.
+EOF
+}
+
+# ---------------------------------------------------------------------------
+# Public command registry
+# ---------------------------------------------------------------------------
+declare -a FORBUT_PUBLIC_COMMANDS=(
+    switch
+    log
+    diff
+    assign
+    discard
+    reorder
+)
+
+# Private commands (used by fzf callbacks, not user-facing)
+declare -a FORBUT_PRIVATE_COMMANDS=(
+    _preview
+)
+
+# ---------------------------------------------------------------------------
+# Command dispatch
+# ---------------------------------------------------------------------------
+_forbut_main() {
+    local cmd="${1:-}"
+
+    case "$cmd" in
+        -h|--help|help|"")
+            _forbut_usage
+            return 0
+            ;;
+        -v|--version|version)
+            echo "forbut $FORBUT_VERSION"
+            return 0
+            ;;
+        _preview)
+            shift
+            _forbut_preview "$@"
+            return $?
+            ;;
+    esac
+
+    # Check if it's a known public command
+    local found=0
+    for c in "${FORBUT_PUBLIC_COMMANDS[@]}"; do
+        if [[ "$c" == "$cmd" ]]; then
+            found=1
+            break
+        fi
+    done
+
+    if [[ $found -eq 0 ]]; then
+        _forbut_error "Unknown command: $cmd"
+        echo "" >&2
+        _forbut_usage >&2
+        return 1
+    fi
+
+    # Run prerequisites once per invocation
+    _forbut_check_prerequisites || return 1
+    _forbut_require_repo || return 1
+
+    # Dispatch to the command function
+    shift
+    "_forbut_cmd_${cmd}" "$@"
+}
+
+# ---------------------------------------------------------------------------
+# Entry guard: only run main() when executed directly (not sourced)
+# ---------------------------------------------------------------------------
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    _forbut_main "$@"
+fi
