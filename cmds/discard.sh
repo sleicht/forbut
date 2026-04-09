@@ -2,6 +2,9 @@
 # cmds/discard.sh — forbut::discard
 # Fuzzy-select hunks/files to discard (remove changes).
 #
+# Uses `but status -j` (JSON) to get unassigned changes with CLI IDs,
+# then `but diff <cli_id>` for previews, and `but discard` to remove.
+#
 # Maps to: but discard <target>
 # Forgit equivalent: forgit::clean
 
@@ -15,10 +18,10 @@ _forbut_cmd_discard() {
 
     local preview_cmd="$FORBUT _preview discard_item {1}"
 
-    # Show uncommitted changes for selection
+    # Show uncommitted/unassigned changes for selection
     local selected
     selected=$(
-        but status 2>/dev/null |
+        _forbut_unassigned_file_list |
         _forbut_fzf FORBUT_DISCARD_FZF_OPTS \
             --header="$header" \
             --preview="$preview_cmd" \
@@ -31,7 +34,7 @@ _forbut_cmd_discard() {
         return 0
     fi
 
-    # Extract IDs from selection
+    # Extract CLI IDs from selection (first field)
     local ids
     ids=$(echo "$selected" | awk '{print $1}' | paste -sd ',' -)
 
@@ -81,6 +84,14 @@ _forbut_preview_discard_item() {
     local preview_pager
     preview_pager=$(_forbut_preview_pager)
 
-    (but diff "$item_ref" 2>/dev/null || git diff --color=always 2>/dev/null) | \
-        eval "$preview_pager"
+    # Use but diff with CLI ID for preview
+    local but_output
+    but_output=$(but diff "$item_ref" 2>/dev/null)
+    if [[ -n "$but_output" ]]; then
+        echo "$but_output" | eval "$preview_pager"
+        return
+    fi
+
+    # Fallback to git diff
+    git diff --color=always -- "$item_ref" 2>/dev/null | eval "$preview_pager"
 }
