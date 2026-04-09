@@ -48,15 +48,15 @@ _forbut_cmd_assign() {
 
     local target_branch
     target_branch=$(
-        but branch list --all 2>/dev/null |
+        _forbut_branch_list |
         _forbut_fzf FORBUT_ASSIGN_BRANCH_FZF_OPTS \
             --header="$branch_header" \
-            --preview="$FORBUT _preview switch_branch {1}" \
+            --preview="$FORBUT _preview switch_branch {3}" \
             --no-multi
     ) || return 0
 
     local branch_id
-    branch_id=$(echo "$target_branch" | awk '{print $1}')
+    branch_id=$(echo "$target_branch" | awk '{print $3}' | sed 's/^\*//')
 
     if [[ -z "$branch_id" ]]; then
         _forbut_warn "No branch selected."
