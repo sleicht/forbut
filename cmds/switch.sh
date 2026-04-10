@@ -21,19 +21,28 @@ _forbut_switch_list() {
     local json
     json=$(but branch list --all -j 2>/dev/null)
 
-    # Path 1: valid JSON from `but` — build rows with jq
-    if [[ -n "$json" ]] && echo "$json" | jq -e 'type == "array" or has("branches")' >/dev/null 2>&1; then
-        # Verify the field we depend on exists. If drift, fail loud.
-        if ! _forbut_schema_assert "$json" '(.branches // .) | type == "array"' 'switch'; then
+    # Path 1: valid JSON from `but` — build rows with jq.
+    # Real schema (verified against but 0.x):
+    #   { "appliedStacks": [{"heads": [{"name", "lastCommitAt", ...}]}],
+    #     "branches":      [{"name", ...}] }  # unapplied
+    if [[ -n "$json" ]] && echo "$json" | jq -e '(.appliedStacks // .branches) != null' >/dev/null 2>&1; then
+        # Assert the fields we actually read from. Drift on either path
+        # (applied or unapplied) trips the schema log.
+        if ! _forbut_schema_assert "$json" '.appliedStacks | type == "array"' 'switch.appliedStacks'; then
+            return 1
+        fi
+        if ! _forbut_schema_assert "$json" '.branches | type == "array"' 'switch.branches'; then
             return 1
         fi
         echo "$json" | jq -r --arg sep "$_FBSEP" '
-            (.branches // .) | .[] |
-            (.name // .identity // "unknown") as $name |
-            (if .applied == true then "\u001b[32m●\u001b[0m " else "  " end) as $marker |
-            (.type // "local") as $type |
-            (.description // "") as $desc |
-            "\($marker)[\($type)] \($name)  \u001b[2m\($desc)\u001b[0m\($sep)\($name)"
+            # Applied stacks: each stack has one or more heads (branches).
+            (.appliedStacks // [] | .[] | .heads // [] | .[] |
+                "\u001b[32m●\u001b[0m [applied] \(.name)\($sep)\(.name)"
+            ),
+            # Unapplied branches: flat list.
+            (.branches // [] | .[] |
+                "  [local]   \(.name // .identity // "unknown")\($sep)\(.name // .identity // "unknown")"
+            )
         ' 2>/dev/null && return 0
     fi
 

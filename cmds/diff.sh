@@ -98,6 +98,14 @@ _forbut_diff_target_file_list() {
 }
 
 # Emit rows for unassigned + staged + committed changes from but status JSON.
+# Note on jq scoping: `.[] as $x` binds $x but does NOT change `.` — we must
+# reference `$x.<field>` explicitly when descending into a bound value.
+# Real but status JSON shape (verified via fixture):
+#   .stacks[].cliId
+#   .stacks[].assignedChanges[].{cliId, filePath, changeType}
+#   .stacks[].branches[].name          (stack name lives on branches[0].name)
+#   .stacks[].branches[].commits[].{cliId, commitId, message, changes[]}
+#   .stacks[].branches[].commits[].changes[].{cliId, filePath, changeType}
 _forbut_diff_rows_from_json() {
     local json="$1"
     echo "$json" | jq -r --arg sep "$_FBSEP" '
@@ -113,13 +121,23 @@ _forbut_diff_rows_from_json() {
 
         # Unassigned (worktree) changes
         (.unassignedChanges // [] | .[] | row("unassigned")),
-        # Assigned (staged-to-stack) changes
-        (.stacks // [] | .[] as $stack | .assignedChanges // [] | .[] |
-            row("staged → \($stack.name // $stack.id // "stack")")),
-        # Committed changes across stacks/branches/commits
-        (.stacks // [] | .[] | .branches // [] | .[] as $branch |
-            .commits // [] | .[] as $commit |
-            .changes // [] | .[] |
+
+        # Assigned (staged-to-stack) changes — stack name comes from its
+        # first branch head.
+        (.stacks // [] | .[] |
+            . as $stack |
+            ($stack.branches // [] | .[0].name // $stack.cliId // "stack") as $stackname |
+            $stack.assignedChanges // [] | .[] |
+            row("staged → \($stackname)")),
+
+        # Committed changes — descend stacks → branches → commits → changes,
+        # binding $commit so its message is still reachable once we iterate
+        # the innermost changes array.
+        (.stacks // [] | .[] |
+            .branches // [] | .[] |
+            .commits // [] | .[] |
+            . as $commit |
+            $commit.changes // [] | .[] |
             row("commit: \($commit.message // "commit" | .[0:40])"))
     ' 2>/dev/null
 }

@@ -1,0 +1,21 @@
+{
+  "appliedStacks": [
+    {
+      "id": "9f3ae048-d600-4497-9403-590dd917f00c",
+      "heads": [
+        {
+          "name": "feature/alpha",
+          "reviews": [],
+          "lastCommitAt": 1775839081000,
+          "commitsAhead": null,
+          "lastAuthor": {
+            "name": "t",
+            "email": "t@t"
+          },
+          "mergesCleanly": true
+        }
+      ]
+    }
+  ],
+  "branches": []
+}

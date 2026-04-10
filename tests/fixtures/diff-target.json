@@ -1,0 +1,21 @@
+{
+  "changes": [
+    {
+      "id": "i0",
+      "path": "added2.txt",
+      "status": "modified",
+      "diff": {
+        "type": "patch",
+        "hunks": [
+          {
+            "oldStart": 1,
+            "oldLines": 0,
+            "newStart": 1,
+            "newLines": 1,
+            "diff": "@@ -1,0 +1,1 @@\n+add 2\n"
+          }
+        ]
+      }
+    }
+  ]
+}
