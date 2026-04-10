@@ -68,32 +68,32 @@ setup() {
 # ---------------------------------------------------------------------------
 # Pager resolution
 # ---------------------------------------------------------------------------
-@test "_forbut_pager returns something" {
+@test "_forbut_get_pager core returns something" {
     local pager
-    pager=$(_forbut_pager)
+    pager=$(_forbut_get_pager core)
     [[ -n "$pager" ]]
 }
 
-@test "_forbut_pager respects FORBUT_PAGER override" {
+@test "_forbut_get_pager core respects FORBUT_PAGER override" {
     FORBUT_PAGER="less -R"
     local pager
-    pager=$(_forbut_pager)
+    pager=$(_forbut_get_pager core)
     [[ "$pager" == "less -R" ]]
     unset FORBUT_PAGER
 }
 
-@test "_forbut_preview_pager returns something" {
+@test "_forbut_get_pager diff respects FORBUT_DIFF_PAGER override" {
+    FORBUT_DIFF_PAGER="diff-so-fancy"
     local pager
-    pager=$(_forbut_preview_pager)
-    [[ -n "$pager" ]]
+    pager=$(_forbut_get_pager diff)
+    [[ "$pager" == "diff-so-fancy" ]]
+    unset FORBUT_DIFF_PAGER
 }
 
-@test "_forbut_preview_pager respects FORBUT_PREVIEW_PAGER override" {
-    FORBUT_PREVIEW_PAGER="cat"
+@test "_forbut_get_pager enter returns LESS config" {
     local pager
-    pager=$(_forbut_preview_pager)
-    [[ "$pager" == "cat" ]]
-    unset FORBUT_PREVIEW_PAGER
+    pager=$(_forbut_get_pager enter)
+    [[ "$pager" == *"less"* ]]
 }
 
 # ---------------------------------------------------------------------------
@@ -106,47 +106,47 @@ setup() {
 }
 
 # ---------------------------------------------------------------------------
-# fzf defaults
+# fzf defaults (env var now, not a function)
 # ---------------------------------------------------------------------------
-@test "_forbut_fzf_defaults includes ansi flag" {
-    local defaults
-    defaults=$(_forbut_fzf_defaults)
-    [[ "$defaults" == *"--ansi"* ]]
+@test "FORBUT_FZF_DEFAULT_OPTS includes ansi flag" {
+    [[ "$FORBUT_FZF_DEFAULT_OPTS" == *"--ansi"* ]]
 }
 
-@test "_forbut_fzf_defaults includes height" {
-    local defaults
-    defaults=$(_forbut_fzf_defaults)
-    [[ "$defaults" == *"--height"* ]]
+@test "FORBUT_FZF_DEFAULT_OPTS includes height" {
+    [[ "$FORBUT_FZF_DEFAULT_OPTS" == *"--height"* ]]
 }
 
-@test "_forbut_fzf_defaults includes user overrides" {
-    FORBUT_FZF_DEFAULT_OPTS="--my-custom-flag"
-    local defaults
-    defaults=$(_forbut_fzf_defaults)
-    [[ "$defaults" == *"--my-custom-flag"* ]]
-    unset FORBUT_FZF_DEFAULT_OPTS
+@test "FORBUT_FZF_DEFAULT_OPTS includes user overrides" {
+    FORBUT_FZF_DEFAULT_OPTS="--my-custom-flag" \
+        bash -c 'source "$FORBUT_INSTALL_DIR/lib/utils.sh"; [[ "$FORBUT_FZF_DEFAULT_OPTS" == *"--my-custom-flag"* ]]'
 }
 
 # ---------------------------------------------------------------------------
-# Separator helpers
+# Display/payload separator (_FBSEP) + text extraction helpers
 # ---------------------------------------------------------------------------
-@test "FORBUT_SEP is defined" {
-    [[ -n "$FORBUT_SEP" ]]
+@test "_FBSEP is defined as 0x1f 0x1e" {
+    [[ -n "$_FBSEP" ]]
+    local hex
+    hex=$(printf '%s' "$_FBSEP" | od -An -tx1 | tr -d ' \n')
+    [[ "$hex" == "1f1e" ]]
 }
 
-@test "_forbut_extract_payload extracts right side" {
-    local input="display${FORBUT_SEP}payload"
-    local result
-    result=$(_forbut_extract_payload "$input")
-    [[ "$result" == "payload" ]]
+@test "_forbut_strip_ansi removes colour codes" {
+    local out
+    out=$(printf '\e[33myellow\e[0m' | _forbut_strip_ansi)
+    [[ "$out" == "yellow" ]]
 }
 
-@test "_forbut_extract_display extracts left side" {
-    local input="display${FORBUT_SEP}payload"
-    local result
-    result=$(_forbut_extract_display "$input")
-    [[ "$result" == "display" ]]
+@test "_forbut_extract_sha pulls first hash" {
+    local out
+    out=$(echo "deadbeef01 some commit message" | _forbut_extract_sha)
+    [[ "$out" == "deadbeef01" ]]
+}
+
+@test "_forbut_extract_branch_name strips current marker" {
+    local out
+    out=$(echo "* feature/foo" | _forbut_extract_branch_name)
+    [[ "$out" == "feature/foo" ]]
 }
 
 # ---------------------------------------------------------------------------
