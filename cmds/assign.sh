@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
 # cmds/assign.sh — forbut::assign
 # Fuzzy-select uncommitted hunks and assign to a stack.
-# This is the core/killer feature of forbut — interactive hunk-to-branch assignment.
+# This is the core/killer feature of forbut: interactive hunk-to-branch
+# assignment that forgit can't do (no virtual branches in vanilla git).
 #
-# Uses `but status -j` (JSON) to get unassigned changes with CLI IDs,
-# then `but diff <cli_id>` for previews, and `but stage` to assign.
+# Flow:
+#   1. Select one or more unassigned changes via _forbut_unassigned_list
+#      → fzf returns payloads (cli_ids).
+#   2. Select a target branch via _forbut_switch_list → fzf returns
+#      payload (branch name).
+#   3. Execute `but stage <cli_ids> <branch>`.
+#
+# Every payload comes back clean from fzf via --accept-nth=2 — no awk,
+# no sed, no column guessing.
 #
 # Maps to: but stage <hunk_ids> <branch>
-# Forgit equivalent: forgit::add (but more powerful with virtual branch targeting)
+# Forgit equivalent: forgit::add (but more powerful with virtual branches)
 
 _forbut_cmd_assign() {
     local header
@@ -17,57 +25,63 @@ _forbut_cmd_assign() {
     header+="${FORBUT_COLOR_DIM}ctrl-a${FORBUT_COLOR_RESET}=select all  "
     header+="${FORBUT_COLOR_DIM}ctrl-/${FORBUT_COLOR_RESET}=toggle preview"
 
-    local preview_cmd="$FORBUT _preview assign_hunk {1}"
+    local preview_cmd="$FORBUT _preview assign_hunk {}"
 
-    # Step 1: Show uncommitted/unassigned changes for hunk selection
-    local selected_hunks
-    selected_hunks=$(
-        _forbut_unassigned_file_list |
+    # Step 1: Fuzzy-pick unassigned hunks. fzf returns one payload per line
+    # (the CLI IDs), already clean.
+    local selected_ids
+    selected_ids=$(
+        _forbut_unassigned_list |
         _forbut_fzf FORBUT_ASSIGN_FZF_OPTS \
+            --delimiter="$_FBSEP" \
+            --with-nth=1 \
+            --accept-nth=2 \
             --header="$header" \
             --preview="$preview_cmd" \
             --multi \
             --bind="ctrl-a:select-all"
-    ) || return 0
+    )
 
-    if [[ -z "$selected_hunks" ]]; then
+    if [[ -z "$selected_ids" ]]; then
         return 0
     fi
 
-    # Extract CLI IDs (first field of each selected line)
+    # fzf with --multi returns one payload per line. Join with commas for
+    # `but stage`.
     local hunk_ids
-    hunk_ids=$(echo "$selected_hunks" | awk '{print $1}' | paste -sd ',' -)
+    hunk_ids=$(echo "$selected_ids" | paste -sd ',' -)
 
     if [[ -z "$hunk_ids" ]]; then
         _forbut_warn "No hunks selected."
         return 0
     fi
 
-    # Step 2: Select target branch
+    # Step 2: Pick the target branch. _forbut_switch_list reuses the same
+    # display/payload contract — branch name comes back clean.
     local branch_header
     branch_header="${FORBUT_COLOR_BOLD}Select target branch${FORBUT_COLOR_RESET}  "
     branch_header+="${FORBUT_COLOR_DIM}enter${FORBUT_COLOR_RESET}=assign to this branch"
 
     local target_branch
     target_branch=$(
-        _forbut_branch_list |
+        _forbut_switch_list |
         _forbut_fzf FORBUT_ASSIGN_BRANCH_FZF_OPTS \
+            --delimiter="$_FBSEP" \
+            --with-nth=1 \
+            --accept-nth=2 \
             --header="$branch_header" \
-            --preview="$FORBUT _preview switch_branch {3}" \
+            --preview="$FORBUT _preview switch_branch {}" \
             --no-multi
-    ) || return 0
+    )
 
-    local branch_id
-    branch_id=$(echo "$target_branch" | awk '{print $3}' | sed 's/^\*//')
-
-    if [[ -z "$branch_id" ]]; then
+    if [[ -z "$target_branch" ]]; then
         _forbut_warn "No branch selected."
         return 0
     fi
 
-    # Step 3: Execute the assignment
-    _forbut_info "Staging hunks ($hunk_ids) to branch: $branch_id"
-    but stage "$hunk_ids" "$branch_id"
+    # Step 3: Execute the assignment. Both payloads are opaque — no parsing.
+    _forbut_info "Staging hunks ($hunk_ids) to branch: $target_branch"
+    but stage "$hunk_ids" "$target_branch"
     local exit_code=$?
 
     if [[ $exit_code -eq 0 ]]; then
@@ -80,49 +94,15 @@ _forbut_cmd_assign() {
 }
 
 # ---------------------------------------------------------------------------
-# Helper: list unassigned changes from but status -j (JSON)
-# ---------------------------------------------------------------------------
-# Output format: <cli_id>  [<status>]  <filepath>
-_forbut_unassigned_file_list() {
-    local _but_json
-    _but_json=$(but status -j 2>/dev/null)
-    if _forbut_has_jq && echo "$_but_json" | jq -e '.unassignedChanges' &>/dev/null; then
-        echo "$_but_json" | jq -r '
-            .unassignedChanges // [] | .[] |
-            "\(.cliId)\t\(.changeType)\t\(.filePath)"
-        ' 2>/dev/null | while IFS=$'\t' read -r cli_id change_type file_path; do
-            [[ -z "$cli_id" ]] && continue
-            local status_marker color
-            case "$change_type" in
-                modified) status_marker="M"; color="$FORBUT_COLOR_YELLOW" ;;
-                added)    status_marker="A"; color="$FORBUT_COLOR_GREEN" ;;
-                removed)  status_marker="D"; color="$FORBUT_COLOR_RED" ;;
-                renamed)  status_marker="R"; color="$FORBUT_COLOR_MAGENTA" ;;
-                *)        status_marker="?"; color="$FORBUT_COLOR_DIM" ;;
-            esac
-            printf '%s  %s[%s]%s  %s\n' \
-                "$cli_id" "$color" "$status_marker" "$FORBUT_COLOR_RESET" "$file_path"
-        done
-    else
-        # Fallback: git status for non-GitButler repos
-        git diff --name-status 2>/dev/null | while IFS=$'\t' read -r fstat file; do
-            [[ -z "$fstat" ]] && continue
-            printf '%s  [%s]  %s\n' "$file" "$fstat" "$file"
-        done
-    fi
-}
-
-# ---------------------------------------------------------------------------
-# Preview: show hunk diff
+# Preview: show the diff for a single hunk payload (CLI ID)
 # ---------------------------------------------------------------------------
 _forbut_preview_assign_hunk() {
     local hunk_ref="$1"
     [[ -z "$hunk_ref" ]] && return
 
     local preview_pager
-    preview_pager=$(_forbut_preview_pager)
+    preview_pager=$(_forbut_get_pager diff)
 
-    # Use but diff with CLI ID for preview
     local but_output
     but_output=$(but diff "$hunk_ref" 2>/dev/null)
     if [[ -n "$but_output" ]]; then
@@ -130,6 +110,6 @@ _forbut_preview_assign_hunk() {
         return
     fi
 
-    # Fallback to git diff
+    # Fallback for pure-git repos: treat payload as a file path.
     git diff --color=always -- "$hunk_ref" 2>/dev/null | eval "$preview_pager"
 }

@@ -125,90 +125,25 @@ _forbut_bat_cmd() {
 }
 
 # ---------------------------------------------------------------------------
-# Pager resolution
-# ---------------------------------------------------------------------------
-# Cascading pager resolution:
-# 1. FORBUT_PAGER (user override)
-# 2. delta (if available)
-# 3. git core.pager
-# 4. cat
-_forbut_pager() {
-    if [[ -n "${FORBUT_PAGER:-}" ]]; then
-        echo "$FORBUT_PAGER"
-    elif _forbut_has_delta; then
-        echo "delta"
-    else
-        local git_pager
-        git_pager=$(git config core.pager 2>/dev/null)
-        if [[ -n "$git_pager" ]]; then
-            echo "$git_pager"
-        else
-            echo "cat"
-        fi
-    fi
-}
-
-# Preview pager — used inside fzf preview windows.
-# delta needs --width for preview panes.
-_forbut_preview_pager() {
-    if [[ -n "${FORBUT_PREVIEW_PAGER:-}" ]]; then
-        echo "$FORBUT_PREVIEW_PAGER"
-    elif _forbut_has_delta; then
-        echo "delta --width=\${FZF_PREVIEW_COLUMNS:-80}"
-    else
-        echo "cat"
-    fi
-}
-
-# ---------------------------------------------------------------------------
 # fzf wrapper
 # ---------------------------------------------------------------------------
-# Build the base fzf options string. Layers:
-#   1. $FZF_DEFAULT_OPTS           (user's global fzf config)
-#   2. forbut built-in defaults    (ANSI, height, keybindings, preview layout)
-#   3. $FORBUT_FZF_DEFAULT_OPTS    (user's forbut-specific overrides)
-_forbut_fzf_defaults() {
-    local builtin_opts="--ansi --height=80% --border --reverse --info=inline"
-    builtin_opts+=" --header-first"
-    builtin_opts+=" --bind=ctrl-d:preview-page-down"
-    builtin_opts+=" --bind=ctrl-u:preview-page-up"
-    builtin_opts+=" --bind=ctrl-/:toggle-preview"
-    builtin_opts+=" --preview-window=right:55%:wrap"
-    builtin_opts+=" --color=header:italic"
-    echo "${FZF_DEFAULT_OPTS:-} $builtin_opts ${FORBUT_FZF_DEFAULT_OPTS:-}"
-}
-
 # Run fzf with forbut defaults + per-command options.
 # Usage: _forbut_fzf <FORBUT_CMD_FZF_OPTS_VAR> [extra-fzf-opts...]
 # The first argument is the NAME of an env var holding per-command fzf options
 # (e.g., "FORBUT_SWITCH_FZF_OPTS"). Pass "" to skip.
-# Remaining arguments are passed directly to fzf as proper args, preserving
-# quoting for values with spaces (--header, --preview, --bind, etc.).
+# Global fzf defaults are set via FORBUT_FZF_DEFAULT_OPTS (defined below),
+# which users may override from their shell config.
 _forbut_fzf() {
     local _cmd_opts_var="$1"; shift
     local _cmd_opts=""
     if [[ -n "$_cmd_opts_var" ]]; then
         _cmd_opts="${!_cmd_opts_var:-}"
     fi
-    FZF_DEFAULT_OPTS="$(_forbut_fzf_defaults) $_cmd_opts" fzf "$@"
+    FZF_DEFAULT_OPTS="$FORBUT_FZF_DEFAULT_OPTS $_cmd_opts" fzf "$@"
     local exit_code=$?
     # Treat ctrl-c / esc (130) as graceful exit
     [[ $exit_code -eq 130 ]] && return 0
     return $exit_code
-}
-
-# ---------------------------------------------------------------------------
-# but JSON helpers
-# ---------------------------------------------------------------------------
-# Run a but command with --json and parse with jq.
-# Usage: _forbut_but_json <but-subcommand...>
-_forbut_but_json() {
-    but "$@" --json 2>/dev/null
-}
-
-# Check if jq is available; many operations benefit from it but can fall back.
-_forbut_has_jq() {
-    _forbut_check_cmd jq
 }
 
 # ---------------------------------------------------------------------------
@@ -238,23 +173,6 @@ _forbut_preview() {
     local cmd="$1"; shift
     export FORBUT_IN_PREVIEW=1
     "_forbut_preview_${cmd}" "$@"
-}
-
-# ---------------------------------------------------------------------------
-# Separator for fzf display vs payload
-# ---------------------------------------------------------------------------
-# Uses ASCII Unit Separator + Record Separator to split display text from
-# machine-parseable data. Combined with fzf --with-nth and --accept-nth.
-FORBUT_SEP=$'\x1f\x1e'
-
-# Extract the payload (right side) from a separator-delimited fzf selection.
-_forbut_extract_payload() {
-    echo "$1" | sed "s/.*${FORBUT_SEP}//"
-}
-
-# Extract the display (left side) from a separator-delimited string.
-_forbut_extract_display() {
-    echo "$1" | sed "s/${FORBUT_SEP}.*//"
 }
 
 # ===========================================================================
@@ -497,6 +415,36 @@ _forbut_schema_drift_log() {
             mv "$log_file" "$log_file.1" 2>/dev/null
         fi
     fi
+}
+
+# ---------------------------------------------------------------------------
+# Unassigned-changes list (shared by assign/discard/diff)
+# ---------------------------------------------------------------------------
+# Emits _FBSEP-delimited rows for unassigned worktree changes only.
+# JSON-first via `but status -f -j`, falling back to pure-git porcelain.
+# Row shape: <coloured [status] filepath>${_FBSEP}<cli_id-or-path>
+_forbut_unassigned_list() {
+    local json
+    json=$(but status -f -j 2>/dev/null)
+    if [[ -n "$json" ]] && echo "$json" | jq -e '.unassignedChanges // empty' >/dev/null 2>&1; then
+        if ! _forbut_schema_assert "$json" '.unassignedChanges | type == "array"' 'unassigned'; then
+            return 1
+        fi
+        echo "$json" | jq -r --arg sep "$_FBSEP" '
+            def marker:
+                if   . == "modified" then "\u001b[33m[M]\u001b[0m"
+                elif . == "added"    then "\u001b[32m[A]\u001b[0m"
+                elif . == "removed"  then "\u001b[31m[D]\u001b[0m"
+                elif . == "renamed"  then "\u001b[35m[R]\u001b[0m"
+                else "\u001b[2m[?]\u001b[0m" end;
+            .unassignedChanges // [] | .[] |
+            "\(.changeType | marker)  \(.filePath)\($sep)\(.cliId)"
+        ' 2>/dev/null
+        return
+    fi
+
+    # Non-GitButler fallback: worktree changes (already _FBSEP-delimited).
+    _forbut_worktree_changes
 }
 
 _forbut_schema_assert() {
