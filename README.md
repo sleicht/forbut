@@ -1,39 +1,46 @@
-# forbut
+<h1 align="center">🧈 forbut</h1>
+<p align="center">
+    <em>Utility tool for using <a href="https://docs.gitbutler.com/cli">GitButler's <code>but</code> CLI</a> interactively. Powered by <a href="https://github.com/junegunn/fzf">junegunn/fzf</a>.</em>
+</p>
 
-> forgit-style fuzzy UX for GitButler's `but` CLI
+<p align="center">
+    <a href="LICENSE">
+        <img src="https://img.shields.io/badge/License-MIT-brightgreen.svg"/>
+    </a>
+    <a href="https://img.shields.io/badge/Shell-Bash%20%7C%20Zsh-blue">
+        <img src="https://img.shields.io/badge/Shell-Bash%20%7C%20Zsh-blue"/>
+    </a>
+</p>
 
-**forbut** wraps [GitButler's `but` CLI](https://docs.gitbutler.com/cli) in
-[fzf](https://github.com/junegunn/fzf) to make hunk-level and stack-level
-operations interactive, discoverable, and fast.
-Inspired by [forgit](https://github.com/wfxr/forgit).
+This tool is designed to help you use [GitButler](https://gitbutler.com) more efficiently from the terminal.
+It's **lightweight**, **easy to use**, and heavily inspired by [forgit](https://github.com/wfxr/forgit).
 
----
+📝 Features
+------------
 
-## Features
+The **killer feature** is `fba` — a two-step fuzzy workflow that lets you pick
+uncommitted hunks and assign them to any virtual branch.
 
-| Command | Alias | Description |
-|---|---|---|
-| `forbut::switch` | `fbs` | Fuzzy-switch between virtual branches/stacks |
-| `forbut::log` | `fbl` | Browse commit log with diff preview |
-| `forbut::diff` | `fbd` | Browse changed files with inline diff preview |
-| `forbut::assign` | `fba` | Fuzzy-select uncommitted hunks and assign to a stack |
-| `forbut::discard` | `fbD` | Fuzzy-select hunks/files to discard (with confirmation) |
-| `forbut::reorder` | `fbr` | Reorder commits within a stack *(v0.2 — planned)* |
+### Full Command List
 
-The **killer feature** is `forbut::assign` — a two-step fuzzy workflow that lets
-you pick uncommitted hunks and assign them to any virtual branch.
+| Command | Description                                                                  |
+|---------|------------------------------------------------------------------------------|
+| `fbs`   | Interactive virtual branch / stack switcher (`but apply` / `but unapply`)    |
+| `fbl`   | Interactive `git log` viewer with diff preview                               |
+| `fbd`   | Interactive `but diff` viewer across unassigned + staged + committed changes |
+| `fba`   | Interactive hunk → stack assignment (`but stage` → `but commit`)             |
+| `fbD`   | Interactive hunk / file discard with confirmation                            |
+| `fbr`   | Interactive commit reorder within a stack *(v0.2 — planned)*                 |
 
-## Dependencies
+📥 Installation
+----------------
 
-| Dependency | Required | Notes |
-|---|---|---|
-| [`but`](https://docs.gitbutler.com/cli) | Yes | GitButler CLI |
-| [`fzf`](https://github.com/junegunn/fzf) >= 0.42.0 | Yes | Fuzzy finder |
-| [`delta`](https://github.com/dandavison/delta) | No | Prettier diff previews (falls back to git pager) |
-| [`bat`](https://github.com/sharkdp/bat) | No | Syntax-highlighted file previews |
-| [`jq`](https://github.com/jqlang/jq) | No | JSON parsing for advanced features |
+### Requirements
 
-## Installation
+- [`but`](https://docs.gitbutler.com/cli) — GitButler CLI
+- [`fzf`](https://github.com/junegunn/fzf) version `0.42.0` or higher
+- [`jq`](https://github.com/jqlang/jq) — hard dependency (JSON is the primary contract with `but`)
+- [`git`](https://git-scm.com) — the non-GitButler fallback path
 
 ### Quick install
 
@@ -42,10 +49,11 @@ git clone https://github.com/user/forbut.git ~/.forbut
 ~/.forbut/install.sh
 ```
 
-Then add to your `.bashrc` or `.zshrc`:
+Then add the following to your shell's config file:
 
-```bash
-source "$HOME/.local/share/forbut/forbut.sh"
+```sh
+# Bash (~/.bashrc) / Zsh (~/.zshrc):
+[ -f $HOME/.local/share/forbut/forbut.sh ] && source $HOME/.local/share/forbut/forbut.sh
 ```
 
 ### Development (symlink) install
@@ -67,116 +75,152 @@ git clone https://github.com/user/forbut.git ~/src/forbut
 ./install.sh --uninstall
 ```
 
-## Usage
+### Git Integration
 
-### Source the plugin (shell functions + aliases)
+You can use forbut as a sub-command of git by making `bin/forbut` available in `$PATH`:
 
-```bash
-# .bashrc / .zshrc
-[ -f ~/.local/share/forbut/forbut.sh ] && source ~/.local/share/forbut/forbut.sh
+```sh
+PATH="$PATH:$FORBUT_INSTALL_DIR/bin"
 ```
 
-### Or use the standalone CLI
+Then any forbut command will work as:
 
-```bash
+```cmd
 forbut switch
 forbut log
 forbut diff
-forbut assign
-forbut discard
 ```
 
-### Aliases
+🚀 Usage
+---------
 
-Once sourced, short aliases are available:
+### Shell Aliases
 
-```
-fbs   →  forbut::switch
-fbl   →  forbut::log
-fbd   →  forbut::diff
-fba   →  forbut::assign
-fbD   →  forbut::discard
-fbr   →  forbut::reorder
-```
-
-Disable all aliases:
+You can change the default aliases by exporting these variables **before** sourcing the forbut shell plugin.
+(To disable all aliases, set the `FORBUT_NO_ALIASES` flag.)
 
 ```bash
-export FORBUT_NO_ALIASES=1
-source ~/.local/share/forbut/forbut.sh
+FORBUT_SWITCH_ALIAS=fbs
+FORBUT_LOG_ALIAS=fbl
+FORBUT_DIFF_ALIAS=fbd
+FORBUT_ASSIGN_ALIAS=fba
+FORBUT_DISCARD_ALIAS=fbD
+FORBUT_REORDER_ALIAS=fbr
 ```
 
-Override individual alias names before sourcing:
+Shell functions (`forbut::switch`, `forbut::log`, …) are registered regardless
+and can be called directly if you prefer.
+
+⚙ Configuration
+-----------------
+
+Options can be set via environment variables. They have to be **exported** in
+order to be recognized by forbut.
+
+### Per-command Options
+
+Each forbut command can be customized with a dedicated environment variable for
+fzf options:
+
+| Command | FZF Options               |
+|---------|---------------------------|
+| `fbs`   | `FORBUT_SWITCH_FZF_OPTS`  |
+| `fbl`   | `FORBUT_LOG_FZF_OPTS`     |
+| `fbd`   | `FORBUT_DIFF_FZF_OPTS`    |
+| `fba`   | `FORBUT_ASSIGN_FZF_OPTS`  |
+| `fbD`   | `FORBUT_DISCARD_FZF_OPTS` |
+
+### Pagers
+
+forbut resolves pagers from git's configuration, falling back through sensible
+defaults. Each can be overridden via environment variable:
+
+| Pager                  | Fallbacks to                                  |
+|------------------------|-----------------------------------------------|
+| `FORBUT_PAGER`         | `git config core.pager` _or_ `cat`            |
+| `FORBUT_DIFF_PAGER`    | `git config pager.diff` _or_ `$FORBUT_PAGER`  |
+| `FORBUT_SHOW_PAGER`    | `git config pager.show` _or_ `$FORBUT_PAGER`  |
+| `FORBUT_BLAME_PAGER`   | `git config pager.blame` _or_ `$FORBUT_PAGER` |
+| `FORBUT_PREVIEW_PAGER` | Normal pager resolution                       |
+
+### FZF Options
+
+You can add default fzf options for forbut, including keybindings, layout, etc.
+(No need to repeat the options already defined in `FZF_DEFAULT_OPTS`.)
 
 ```bash
-export FORBUT_SWITCH_ALIAS=myswitch
-export FORBUT_LOG_ALIAS=mylog
-source ~/.local/share/forbut/forbut.sh
+export FORBUT_FZF_DEFAULT_OPTS="
+--exact
+--border
+--cycle
+--reverse
+--height=80%
+"
 ```
 
-## Configuration
+Complete loading order of fzf options is:
 
-All configuration is via environment variables. Set them in your shell config
-before sourcing `forbut.sh`.
+1. `FZF_DEFAULT_OPTS` (fzf global)
+2. `FORBUT_FZF_DEFAULT_OPTS` (forbut global)
+3. `FORBUT_<CMD>_FZF_OPTS` (command specific)
 
-### Pager
+### Other Options
 
-```bash
-export FORBUT_PAGER="delta"              # diff pager (default: delta > git core.pager > cat)
-export FORBUT_PREVIEW_PAGER="delta --width=80"  # fzf preview pane pager
+| Option                      | Description                                | Default |
+|-----------------------------|--------------------------------------------|---------|
+| `FORBUT_DISCARD_NO_CONFIRM` | Skip the "are you sure?" prompt on discard | unset   |
+| `FORBUT_NO_ALIASES`         | Disable all shell aliases                  | unset   |
+
+### Schema Drift Log
+
+forbut uses `but`'s JSON output as its primary data contract. When the JSON
+schema changes upstream, forbut fails loudly and appends a structured record to:
+
+```
+${XDG_STATE_HOME:-$HOME/.local/state}/forbut/schema-drift.log
 ```
 
-### fzf options
+Each entry includes the `but` version, forbut version, missing field path,
+command, and raw sample. When filing upstream issues with the GitButler team,
+grab evidence from this log.
 
-```bash
-# Extra fzf options applied to every forbut command
-export FORBUT_FZF_DEFAULT_OPTS="--height=90%"
+⌨ Keybindings
+---------------
 
-# Per-command fzf overrides
-export FORBUT_SWITCH_FZF_OPTS="--preview-window=bottom:40%"
-export FORBUT_LOG_FZF_OPTS="--no-sort"
-export FORBUT_DIFF_FZF_OPTS=""
-export FORBUT_ASSIGN_FZF_OPTS=""
-export FORBUT_DISCARD_FZF_OPTS=""
-```
+|              Key               | Action                                   |
+|:------------------------------:|------------------------------------------|
+|        <kbd>Enter</kbd>        | Accept / execute primary action          |
+|         <kbd>Tab</kbd>         | Toggle selection (multi-select commands) |
+| <kbd>Ctrl</kbd> - <kbd>A</kbd> | Select all (multi-select commands)       |
+| <kbd>Ctrl</kbd> - <kbd>/</kbd> | Toggle preview pane                      |
+| <kbd>Ctrl</kbd> - <kbd>D</kbd> | Scroll preview down                      |
+| <kbd>Ctrl</kbd> - <kbd>U</kbd> | Scroll preview up                        |
+| <kbd>Ctrl</kbd> - <kbd>Y</kbd> | Copy commit hash to clipboard (`fbl`)    |
+| <kbd>Ctrl</kbd> - <kbd>X</kbd> | Unapply branch (`fbs`)                   |
 
-fzf options are layered in this order (last wins):
+📦 Optional dependencies
+-------------------------
 
-1. `$FZF_DEFAULT_OPTS` — your global fzf config
-2. forbut built-in defaults — ANSI, height, keybindings, preview layout
-3. `$FORBUT_FZF_DEFAULT_OPTS` — your forbut-wide overrides
-4. `$FORBUT_<CMD>_FZF_OPTS` — per-command overrides
+- [`delta`](https://github.com/dandavison/delta) / [`diff-so-fancy`](https://github.com/so-fancy/diff-so-fancy): For better human-readable diffs.
+- [`bat`](https://github.com/sharkdp/bat): Syntax-highlighted file previews.
 
-### Other
+💡 Tips
+--------
 
-```bash
-export FORBUT_DISCARD_NO_CONFIRM=1   # skip the "are you sure?" prompt on discard
-```
+- `fbd` supports an optional target argument: `fbd <commit>` or `fbd <stack>` shows the file list for that specific diff target.
+- `fbl` accepts a branch name: `fbl feature/alpha` scopes the log to that branch.
+- forbut prefers `but`'s JSON output but transparently falls back to pure `git` in non-GitButler repositories — most commands work anywhere.
 
-## Keybindings
-
-Default keybindings inside fzf (consistent across all commands):
-
-| Key | Action |
-|---|---|
-| `Enter` | Accept / execute primary action |
-| `Tab` | Toggle selection (multi-select commands) |
-| `Ctrl-A` | Select all (multi-select commands) |
-| `Ctrl-/` | Toggle preview pane |
-| `Ctrl-D` | Scroll preview down |
-| `Ctrl-U` | Scroll preview up |
-| `Ctrl-Y` | Copy hash to clipboard (log) |
-| `Ctrl-X` | Unapply branch (switch) |
-
-## Project Structure
+📁 Project Structure
+---------------------
 
 ```
 forbut/
 ├── forbut.sh          # Shell plugin loader (functions + aliases)
 ├── bin/
-│   └── forbut         # Standalone CLI (all logic lives here)
+│   └── forbut         # Standalone CLI dispatcher
 ├── lib/
-│   └── utils.sh       # Shared helpers (colours, fzf wrapper, dep checks, pager)
+│   └── utils.sh       # Shared helpers (fzf wrapper, pagers, schema assert, ...)
 ├── cmds/
 │   ├── switch.sh      # forbut::switch
 │   ├── log.sh         # forbut::log
@@ -184,7 +228,8 @@ forbut/
 │   ├── assign.sh      # forbut::assign
 │   ├── discard.sh     # forbut::discard
 │   └── reorder.sh     # forbut::reorder (v0.2 stub)
-├── tests/             # bats-core tests
+├── tests/             # bats-core tests (utils + fixture + integration)
+│   └── fixtures/      # Captured `but` JSON samples for hermetic tests
 ├── docs/
 │   └── mapping.md     # git → but → forbut concept mapping
 ├── install.sh
@@ -192,20 +237,33 @@ forbut/
 └── LICENSE
 ```
 
-## How It Works
+🛠 How It Works
+---------------
 
-forbut follows [forgit's](https://github.com/wfxr/forgit) two-layer architecture:
+forbut follows forgit's two-layer architecture:
 
-- **`forbut.sh`** — thin shell plugin that registers functions (`forbut::switch`, etc.)
-  and aliases (`fbs`, etc.), then delegates to `bin/forbut`.
-- **`bin/forbut`** — standalone Bash script containing all logic. Sources `lib/utils.sh`
-  and every `cmds/*.sh` file, then dispatches to the requested command function.
+- **`forbut.sh`** — thin shell plugin that registers functions (`forbut::switch`, etc.) and aliases (`fbs`, etc.), then delegates to `bin/forbut`.
+- **`bin/forbut`** — standalone Bash script containing all logic. Sources `lib/utils.sh` and every `cmds/*.sh` file, then dispatches to the requested command.
+
+### The `_FBSEP` display/payload contract
+
+Every fuzzy picker emits rows shaped as:
+
+```
+<ansi-coloured display>${_FBSEP}<machine payload>
+```
+
+where `_FBSEP=$'\x1f\x1e'` (ASCII Unit Separator + Record Separator). fzf is
+invoked with `--delimiter=$_FBSEP --with-nth=1 --accept-nth=2`, so it **shows**
+field 1 but **returns** field 2 verbatim — no `awk '{print $N}'` on selection
+output, no column drift, no marker/ANSI parsing bugs.
 
 fzf previews use a **self-invocation** pattern: the `--preview` command calls
-`forbut _preview <func> {}`, which re-enters the script with all helpers available
-in the subprocess.
+`forbut _preview <func> {}`, which re-enters the script with all helpers
+available.
 
-## Running Tests
+🧪 Running Tests
+----------------
 
 Tests use [bats-core](https://github.com/bats-core/bats-core):
 
@@ -217,24 +275,44 @@ brew install bats-core
 bats tests/
 ```
 
-## Roadmap
+The suite is split into three layers:
+
+| Suite                    | What it covers                                                 |
+|--------------------------|----------------------------------------------------------------|
+| `tests/utils.bats`       | `lib/utils.sh` primitives (pagers, `_FBSEP`, schema assert, …) |
+| `tests/commands.bats`    | Fixture-based command tests with a mock `but` shim on `$PATH`  |
+| `tests/integration.bats` | End-to-end tests against a real `but setup` in a temp repo     |
+
+Set `FORBUT_SKIP_INTEGRATION=1` to skip the integration layer (useful in CI
+environments where writing to GitButler's app-support directory is undesirable).
+
+🗺 Roadmap
+-----------
 
 ### v0.1 (current)
 
-- [x] `forbut::switch` — fuzzy branch switching
-- [x] `forbut::log` — commit log browser
-- [x] `forbut::diff` — changed files browser
-- [x] `forbut::assign` — hunk → stack assignment
-- [x] `forbut::discard` — fuzzy discard with confirmation
+- [x] `fbs` — fuzzy branch switching
+- [x] `fbl` — commit log browser
+- [x] `fbd` — changed files browser
+- [x] `fba` — hunk → stack assignment
+- [x] `fbD` — fuzzy discard with confirmation
 
 ### v0.2
 
-- [ ] `forbut::reorder` — interactive commit reordering
-- [ ] `forbut::squash` — fuzzy-select commits to squash
-- [ ] `forbut::conflicts` — browse conflicting virtual branches
-- [ ] `forbut::series` — navigate and inspect a patch series
+- [ ] `fbr` — interactive commit reordering
+- [ ] `fbsq` — fuzzy-select commits to squash
+- [ ] `fbc` — browse conflicting virtual branches
+- [ ] `fbS` — navigate and inspect a patch series
 - [ ] Plugin manager support (oh-my-zsh, zinit, fisher)
 
-## License
+⚒️ Contributing
+---------------
+
+Contributions are welcome. When filing issues involving schema mismatches with
+`but`, please attach a recent entry from the schema drift log (see
+[Schema Drift Log](#schema-drift-log) above).
+
+📃 License
+-----------
 
 [MIT](LICENSE)
