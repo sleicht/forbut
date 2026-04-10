@@ -85,7 +85,7 @@ _forbut_cmd_assign() {
 # Output format: <cli_id>  [<status>]  <filepath>
 _forbut_unassigned_file_list() {
     local _but_json
-    _but_json=$(but status -j 2>/dev/null) || true
+    _but_json=$(but status -j 2>/dev/null)
     if _forbut_has_jq && echo "$_but_json" | jq -e '.unassignedChanges' &>/dev/null; then
         echo "$_but_json" | jq -r '
             .unassignedChanges // [] | .[] |
@@ -124,7 +124,7 @@ _forbut_preview_assign_hunk() {
 
     # Use but diff with CLI ID for preview
     local but_output
-    but_output=$(but diff "$hunk_ref" 2>/dev/null) || true
+    but_output=$(but diff "$hunk_ref" 2>/dev/null)
     if [[ -n "$but_output" ]]; then
         echo "$but_output" | eval "$preview_pager"
         return

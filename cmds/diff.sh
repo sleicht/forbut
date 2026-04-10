@@ -53,7 +53,7 @@ _forbut_diff_file_list() {
     # Try but status -f -j first (requires GitButler project + jq)
     if _forbut_has_jq; then
         local _but_json
-        _but_json=$(but status -f -j 2>/dev/null) || true
+        _but_json=$(but status -f -j 2>/dev/null)
         if echo "$_but_json" | jq -e '.stacks' &>/dev/null; then
             _forbut_diff_but_json "$_but_json"
             return

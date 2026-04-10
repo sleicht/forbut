@@ -86,7 +86,7 @@ _forbut_preview_discard_item() {
 
     # Use but diff with CLI ID for preview
     local but_output
-    but_output=$(but diff "$item_ref" 2>/dev/null) || true
+    but_output=$(but diff "$item_ref" 2>/dev/null)
     if [[ -n "$but_output" ]]; then
         echo "$but_output" | eval "$preview_pager"
         return

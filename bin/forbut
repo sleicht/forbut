@@ -6,7 +6,10 @@
 # This file contains the command dispatch and all core logic.
 # Shell functions in forbut.sh delegate here.
 
-set -euo pipefail
+# NOTE: intentionally NOT using `set -euo pipefail`.
+# forgit avoids strict mode because `git`/`but` routinely exit non-zero in
+# valid flows (empty diffs, non-GitButler repos, missing optional fields).
+# Commands handle errors explicitly via return codes instead.
 
 # ---------------------------------------------------------------------------
 # Resolve installation directory (relative to this script)
