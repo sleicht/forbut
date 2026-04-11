@@ -37,7 +37,7 @@ _forbut_cmd_diff() {
             --accept-nth=2 \
             --header="$header" \
             --preview="$preview_cmd" \
-            --bind="enter:execute(but diff {} 2>/dev/null || git diff --color=always -- {} 2>/dev/null | $pager)" \
+            --bind="enter:execute($FORBUT _preview diff_file {})" \
             --no-sort
     )
     # selected holds the clean payload; discarded on empty/cancel.
@@ -57,7 +57,7 @@ _forbut_diff_file_list() {
 
     # Try but status -f -j (JSON) first.
     local json
-    json=$(but status -f -j 2>/dev/null)
+    json=$(_forbut_but status -f -j)
     if [[ -n "$json" ]] && echo "$json" | jq -e '.stacks // .unassignedChanges' >/dev/null 2>&1; then
         # Assert the fields we depend on. Schema drift tripwire.
         if ! _forbut_schema_assert "$json" '.unassignedChanges // [] | type == "array"' 'diff'; then
@@ -75,7 +75,7 @@ _forbut_diff_file_list() {
 _forbut_diff_target_file_list() {
     local target="$1"
     local json
-    json=$(but diff "$target" -j 2>/dev/null)
+    json=$(_forbut_but diff "$target" -j)
     if [[ -n "$json" ]] && echo "$json" | jq -e '.changes // empty' >/dev/null 2>&1; then
         if ! _forbut_schema_assert "$json" '.changes | type == "array"' 'diff-target'; then
             return 1
@@ -94,7 +94,7 @@ _forbut_diff_target_file_list() {
     fi
 
     # Non-JSON fallback: raw diff text.
-    but diff "$target" 2>/dev/null
+    _forbut_but diff "$target"
 }
 
 # Emit rows for unassigned + staged + committed changes from but status JSON.
@@ -154,8 +154,8 @@ _forbut_preview_diff_file() {
 
     # but diff handles CLI IDs; on failure fall through to git diff by path.
     local but_output
-    but_output=$(but diff "$ref" 2>/dev/null)
-    if [[ -n "$but_output" ]]; then
+    but_output=$(_forbut_but diff "$ref")
+    if [[ -n "$but_output" ]] && grep -qE '^(diff --git|@@ )' <<<"$but_output"; then
         echo "$but_output" | eval "$preview_pager"
         return
     fi
