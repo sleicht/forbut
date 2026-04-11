@@ -155,7 +155,7 @@ _forbut_preview_diff_file() {
     # but diff handles CLI IDs; on failure fall through to git diff by path.
     local but_output
     but_output=$(_forbut_but diff --no-tui "$ref")
-    if [[ -n "$but_output" ]] && grep -qE '^(diff --git|@@ )' <<<"$but_output"; then
+    if [[ -n "$but_output" ]]; then
         echo "$but_output" | eval "$preview_pager"
         return
     fi
