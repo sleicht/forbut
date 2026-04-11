@@ -104,7 +104,7 @@ _forbut_preview_assign_hunk() {
     preview_pager=$(_forbut_get_pager diff)
 
     local but_output
-    but_output=$(but diff "$hunk_ref" 2>/dev/null)
+    but_output=$(_forbut_but diff "$hunk_ref")
     if [[ -n "$but_output" ]]; then
         echo "$but_output" | eval "$preview_pager"
         return

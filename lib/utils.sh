@@ -418,6 +418,16 @@ _forbut_schema_drift_log() {
 }
 
 # ---------------------------------------------------------------------------
+# but wrapper — strips stdout banners GitButler prints during background sync
+# ---------------------------------------------------------------------------
+# GitButler's `but` CLI prints lines like "Initiated a background sync ..."
+# to STDOUT (not stderr). Those lines pollute captured diffs and break jq
+# when mixed with JSON. This wrapper filters them before output reaches callers.
+_forbut_but() {
+    but "$@" 2>/dev/null | sed -E '/^Initiated a background sync/d'
+}
+
+# ---------------------------------------------------------------------------
 # Unassigned-changes list (shared by assign/discard/diff)
 # ---------------------------------------------------------------------------
 # Emits _FBSEP-delimited rows for unassigned worktree changes only.
@@ -425,7 +435,7 @@ _forbut_schema_drift_log() {
 # Row shape: <coloured [status] filepath>${_FBSEP}<cli_id-or-path>
 _forbut_unassigned_list() {
     local json
-    json=$(but status -f -j 2>/dev/null)
+    json=$(_forbut_but status -f -j)
     if [[ -n "$json" ]] && echo "$json" | jq -e '.unassignedChanges // empty' >/dev/null 2>&1; then
         if ! _forbut_schema_assert "$json" '.unassignedChanges | type == "array"' 'unassigned'; then
             return 1
