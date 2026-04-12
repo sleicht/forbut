@@ -198,8 +198,27 @@ _forbut_enter_diff_file() {
     fi
     [[ -z "$ref" ]] && return
 
-    # but diff (with TUI) is the intended full-screen interactive viewer.
-    # Fall back to git diff piped through the enter pager for non-GitButler repos.
-    but diff "$ref" 2>/dev/null || \
-        git diff --color=always -- "$ref" 2>/dev/null | eval "$(_forbut_get_pager enter)"
+    local enter_pager
+    enter_pager=$(_forbut_get_pager enter)
+
+    # Same fallback chain as preview but with the interactive enter pager.
+    local filepath output
+    filepath=$(_forbut_but diff "$ref" -j | grep -m1 '"path":' | sed 's/.*"path":[[:space:]]*"\([^"]*\)".*/\1/')
+
+    if [[ -n "$filepath" ]]; then
+        output=$(git diff --color=always -- "$filepath" 2>/dev/null)
+        [[ -z "$output" ]] && output=$(git diff --cached --color=always -- "$filepath" 2>/dev/null)
+        if [[ -n "$output" ]]; then
+            echo "$output" | eval "$enter_pager"
+            return
+        fi
+    fi
+
+    output=$(_forbut_but diff --no-tui "$ref")
+    if [[ -n "$output" ]]; then
+        echo "$output" | eval "$enter_pager"
+        return
+    fi
+
+    git diff --color=always -- "$ref" 2>/dev/null | eval "$enter_pager"
 }
