@@ -174,10 +174,10 @@ _forbut_preview_diff_file() {
         fi
     fi
 
-    # 2. but diff --no-tui — works for committed changes (uncoloured but functional).
+    # 2. but diff --no-tui — works for committed changes; add ANSI colour.
     output=$(_forbut_but diff --no-tui "$ref")
     if [[ -n "$output" ]]; then
-        echo "$output" | eval "$preview_pager"
+        echo "$output" | _forbut_colorize_but_diff | eval "$preview_pager"
         return
     fi
 
@@ -216,7 +216,7 @@ _forbut_enter_diff_file() {
 
     output=$(_forbut_but diff --no-tui "$ref")
     if [[ -n "$output" ]]; then
-        echo "$output" | eval "$enter_pager"
+        echo "$output" | _forbut_colorize_but_diff | eval "$enter_pager"
         return
     fi
 
