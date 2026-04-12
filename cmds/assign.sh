@@ -97,7 +97,12 @@ _forbut_cmd_assign() {
 # Preview: show the diff for a single hunk payload (CLI ID)
 # ---------------------------------------------------------------------------
 _forbut_preview_assign_hunk() {
-    local hunk_ref="$1"
+    local hunk_ref
+    if [[ "$1" == *"$_FBSEP"* ]]; then
+        hunk_ref="${1#*"$_FBSEP"}"
+    else
+        hunk_ref="$1"
+    fi
     [[ -z "$hunk_ref" ]] && return
 
     local preview_pager

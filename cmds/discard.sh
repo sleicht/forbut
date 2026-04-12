@@ -89,7 +89,12 @@ _forbut_cmd_discard() {
 # Preview: show what would be discarded (CLI ID or file path)
 # ---------------------------------------------------------------------------
 _forbut_preview_discard_item() {
-    local item_ref="$1"
+    local item_ref
+    if [[ "$1" == *"$_FBSEP"* ]]; then
+        item_ref="${1#*"$_FBSEP"}"
+    else
+        item_ref="$1"
+    fi
     [[ -z "$item_ref" ]] && return
 
     local preview_pager
