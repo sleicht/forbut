@@ -37,7 +37,7 @@ _forbut_cmd_diff() {
             --accept-nth=2 \
             --header="$header" \
             --preview="$preview_cmd" \
-            --bind="enter:execute($FORBUT _preview diff_file {})" \
+            --bind="enter:execute($FORBUT _enter diff_file {})" \
             --no-sort
     )
     # selected holds the clean payload; discarded on empty/cancel.
@@ -158,16 +158,39 @@ _forbut_preview_diff_file() {
     local preview_pager
     preview_pager=$(_forbut_get_pager diff)
 
-    # but diff handles CLI IDs; on failure fall through to git diff by path.
-    local but_output
-    but_output=$(_forbut_but diff --no-tui "$ref")
-    if [[ -n "$but_output" ]]; then
-        echo "$but_output" | eval "$preview_pager"
+    # Use but diff -j to resolve the file path, then render with git diff for colour.
+    # but diff --no-tui outputs uncoloured box-drawing chars; git diff produces ANSI.
+    # Note: but diff -j embeds literal newlines inside JSON strings (invalid per spec),
+    # so jq rejects it. Use grep/sed to extract the path from the first "path": line.
+    local filepath
+    filepath=$(_forbut_but diff "$ref" -j | grep -m1 '"path":' | sed 's/.*"path":[[:space:]]*"\([^"]*\)".*/\1/')
+
+    if [[ -n "$filepath" ]]; then
+        git diff --color=always -- "$filepath" 2>/dev/null | eval "$preview_pager" && return
+        git diff --cached --color=always -- "$filepath" 2>/dev/null | eval "$preview_pager"
         return
     fi
 
+    # Fallback for non-GitButler repos: ref is a plain file path.
     git diff --color=always -- "$ref" 2>/dev/null | eval "$preview_pager"
-    if [[ -z "$but_output" ]]; then
-        git diff --cached --color=always -- "$ref" 2>/dev/null | eval "$preview_pager"
+    git diff --cached --color=always -- "$ref" 2>/dev/null | eval "$preview_pager"
+}
+
+# ---------------------------------------------------------------------------
+# Enter: open full-screen interactive diff (TUI) for the selected item
+# ---------------------------------------------------------------------------
+_forbut_enter_diff_file() {
+    # fzf {} gives the full original line; extract the payload (field 2 after _FBSEP).
+    local ref
+    if [[ "$1" == *"$_FBSEP"* ]]; then
+        ref="${1#*"$_FBSEP"}"
+    else
+        ref="$1"
     fi
+    [[ -z "$ref" ]] && return
+
+    # but diff (with TUI) is the intended full-screen interactive viewer.
+    # Fall back to git diff piped through the enter pager for non-GitButler repos.
+    but diff "$ref" 2>/dev/null || \
+        git diff --color=always -- "$ref" 2>/dev/null | eval "$(_forbut_get_pager enter)"
 }

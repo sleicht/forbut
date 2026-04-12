@@ -107,6 +107,7 @@ declare -a FORBUT_PUBLIC_COMMANDS=(
 # Private commands (used by fzf callbacks, not user-facing)
 declare -a FORBUT_PRIVATE_COMMANDS=(
     _preview
+    _enter
 )
 
 # ---------------------------------------------------------------------------
@@ -127,6 +128,11 @@ _forbut_main() {
         _preview)
             shift
             _forbut_preview "$@"
+            return $?
+            ;;
+        _enter)
+            shift
+            _forbut_enter "$@"
             return $?
             ;;
     esac
