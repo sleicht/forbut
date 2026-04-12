@@ -146,7 +146,13 @@ _forbut_diff_rows_from_json() {
 # Preview: render the diff for a payload (CLI ID or file path)
 # ---------------------------------------------------------------------------
 _forbut_preview_diff_file() {
-    local ref="$1"
+    # fzf {} gives the full original line; extract the payload (field 2 after _FBSEP).
+    local ref
+    if [[ "$1" == *"$_FBSEP"* ]]; then
+        ref="${1#*"$_FBSEP"}"
+    else
+        ref="$1"
+    fi
     [[ -z "$ref" ]] && return
 
     local preview_pager
