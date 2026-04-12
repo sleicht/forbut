@@ -77,13 +77,13 @@ _forbut_require_fzf() {
     fi
     local installed_fzf_version
     installed_fzf_version=$(fzf --version 2>/dev/null | awk '{print $1}')
-    if [[ -z "$installed_fzf_version" ]]; then
+    if [[ -z $installed_fzf_version ]]; then
         _forbut_die "Could not determine fzf version."
         return 1
     fi
     local higher
     higher=$(printf '%s\n' "$REQUIRED_FZF_VERSION" "$installed_fzf_version" | sort -V | tail -n1)
-    if [[ "$higher" != "$installed_fzf_version" ]]; then
+    if [[ $higher != "$installed_fzf_version" ]]; then
         _forbut_die "fzf version $REQUIRED_FZF_VERSION or higher is required (found $installed_fzf_version)."
         return 1
     fi
@@ -134,9 +134,10 @@ _forbut_bat_cmd() {
 # Global fzf defaults are set via FORBUT_FZF_DEFAULT_OPTS (defined below),
 # which users may override from their shell config.
 _forbut_fzf() {
-    local _cmd_opts_var="$1"; shift
+    local _cmd_opts_var="$1"
+    shift
     local _cmd_opts=""
-    if [[ -n "$_cmd_opts_var" ]]; then
+    if [[ -n $_cmd_opts_var ]]; then
         _cmd_opts="${!_cmd_opts_var:-}"
     fi
     FZF_DEFAULT_OPTS="$FORBUT_FZF_DEFAULT_OPTS $_cmd_opts" fzf "$@"
@@ -170,13 +171,15 @@ _forbut_require_repo() {
 #   forbut preview <func> <args...>
 # This ensures all helpers are available in the preview subprocess.
 _forbut_preview() {
-    local cmd="$1"; shift
+    local cmd="$1"
+    shift
     export FORBUT_IN_PREVIEW=1
     "_forbut_${cmd}" "$@"
 }
 
 _forbut_enter() {
-    local cmd="$1"; shift
+    local cmd="$1"
+    shift
     "_forbut_${cmd}" "$@"
 }
 
@@ -247,7 +250,7 @@ _forbut_reverse_lines() {
 # Split a space-separated string in $2 into a global array named $1.
 _forbut_parse_array() {
     ${IFS+"false"} && unset old_IFS || old_IFS="$IFS"
-    IFS=" " read -r -a "$1" <<< "$2"
+    IFS=" " read -r -a "$1" <<<"$2"
     ${old_IFS+"false"} && unset IFS || IFS="$old_IFS"
 }
 
@@ -259,7 +262,7 @@ _forbut_parse_array() {
 _forbut_git_branch_list() {
     local current
     current=$(git branch --show-current 2>/dev/null)
-    if [[ -n "$current" ]]; then
+    if [[ -n $current ]]; then
         printf '%s* %s%s\n' "$FORBUT_COLOR_DIM" "$current" "$FORBUT_COLOR_RESET"
     else
         printf '%s* (HEAD detached at %s)%s\n' \
@@ -310,7 +313,7 @@ _forbut_get_pager() {
     local key="${1:-core}"
     case "$key" in
         core)
-            if [[ -n "${FORBUT_PAGER:-}" ]]; then
+            if [[ -n ${FORBUT_PAGER:-} ]]; then
                 echo "$FORBUT_PAGER"
             elif _forbut_has_delta; then
                 echo "delta"
@@ -323,9 +326,9 @@ _forbut_get_pager() {
         diff)
             local dp
             dp=$(git config pager.diff 2>/dev/null)
-            if [[ -n "${FORBUT_DIFF_PAGER:-}" ]]; then
+            if [[ -n ${FORBUT_DIFF_PAGER:-} ]]; then
                 echo "$FORBUT_DIFF_PAGER"
-            elif [[ -n "$dp" ]]; then
+            elif [[ -n $dp ]]; then
                 echo "$dp"
             else
                 _forbut_get_pager core
@@ -334,9 +337,9 @@ _forbut_get_pager() {
         show)
             local sp
             sp=$(git config pager.show 2>/dev/null)
-            if [[ -n "${FORBUT_SHOW_PAGER:-}" ]]; then
+            if [[ -n ${FORBUT_SHOW_PAGER:-} ]]; then
                 echo "$FORBUT_SHOW_PAGER"
-            elif [[ -n "$sp" ]]; then
+            elif [[ -n $sp ]]; then
                 echo "$sp"
             else
                 _forbut_get_pager core
@@ -345,9 +348,9 @@ _forbut_get_pager() {
         blame)
             local bp
             bp=$(git config pager.blame 2>/dev/null)
-            if [[ -n "${FORBUT_BLAME_PAGER:-}" ]]; then
+            if [[ -n ${FORBUT_BLAME_PAGER:-} ]]; then
                 echo "$FORBUT_BLAME_PAGER"
-            elif [[ -n "$bp" ]]; then
+            elif [[ -n $bp ]]; then
                 echo "$bp"
             else
                 _forbut_get_pager core
@@ -366,14 +369,15 @@ _forbut_get_pager() {
 # (FORBUT_IN_PREVIEW=1), prefer FORBUT_PREVIEW_PAGER; otherwise use the
 # key-based pager. This marker is set by _forbut_preview.
 _forbut_pager_route() {
-    local key="${1:-core}"; shift
+    local key="${1:-core}"
+    shift
     local pager
-    if [[ -n "${FORBUT_IN_PREVIEW:-}" ]] && [[ -n "${FORBUT_PREVIEW_PAGER:-}" ]]; then
+    if [[ -n ${FORBUT_IN_PREVIEW:-} ]] && [[ -n ${FORBUT_PREVIEW_PAGER:-} ]]; then
         pager="$FORBUT_PREVIEW_PAGER"
     else
         pager=$(_forbut_get_pager "$key")
     fi
-    [[ -z "$pager" ]] && return 1
+    [[ -z $pager ]] && return 1
     eval "$pager $*"
 }
 
@@ -409,14 +413,14 @@ _forbut_schema_drift_log() {
             --arg cmd "$command" \
             --arg raw "$raw_sample" \
             '{timestamp:$ts, but_version:$bv, forbut_version:$fv, missing_path:$mp, command:$cmd, raw_sample:$raw}' \
-            >> "$log_file" 2>/dev/null
+            >>"$log_file" 2>/dev/null
     fi
 
     # Rotate if file exceeds ~1MB.
-    if [[ -f "$log_file" ]]; then
+    if [[ -f $log_file ]]; then
         local size
-        size=$(wc -c < "$log_file" 2>/dev/null | tr -d ' ')
-        if [[ -n "$size" ]] && (( size > 1048576 )); then
+        size=$(wc -c <"$log_file" 2>/dev/null | tr -d ' ')
+        if [[ -n $size ]] && ((size > 1048576)); then
             mv "$log_file" "$log_file.1" 2>/dev/null
         fi
     fi
@@ -447,7 +451,7 @@ _forbut_colorize_but_diff() {
 _forbut_unassigned_list() {
     local json
     json=$(_forbut_but status -f -j)
-    if [[ -n "$json" ]] && echo "$json" | jq -e '.unassignedChanges // empty' >/dev/null 2>&1; then
+    if [[ -n $json ]] && echo "$json" | jq -e '.unassignedChanges // empty' >/dev/null 2>&1; then
         if ! _forbut_schema_assert "$json" '.unassignedChanges | type == "array"' 'unassigned'; then
             return 1
         fi
@@ -470,7 +474,7 @@ _forbut_unassigned_list() {
 
 _forbut_schema_assert() {
     local json="$1" jq_path="$2" command="$3"
-    if [[ -z "$json" ]]; then
+    if [[ -z $json ]]; then
         _forbut_error "Empty JSON from 'but' — is 'but' installed and the repo a GitButler project?"
         return 1
     fi

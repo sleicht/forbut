@@ -22,18 +22,18 @@ _forbut_discard() {
     local selected_ids
     selected_ids=$(
         _forbut_unassigned_list |
-        _forbut_fzf FORBUT_DISCARD_FZF_OPTS \
-            --delimiter="$_fbsep" \
-            --with-nth=1 \
-            --accept-nth=2 \
-            --header="$header" \
-            --preview="$preview_cmd" \
-            --multi \
-            --bind="ctrl-a:select-all" \
-            --color="header:red:italic"
+            _forbut_fzf FORBUT_DISCARD_FZF_OPTS \
+                --delimiter="$_fbsep" \
+                --with-nth=1 \
+                --accept-nth=2 \
+                --header="$header" \
+                --preview="$preview_cmd" \
+                --multi \
+                --bind="ctrl-a:select-all" \
+                --color="header:red:italic"
     )
 
-    if [[ -z "$selected_ids" ]]; then
+    if [[ -z $selected_ids ]]; then
         return 0
     fi
 
@@ -41,13 +41,13 @@ _forbut_discard() {
     local ids
     ids=$(echo "$selected_ids" | paste -sd ',' -)
 
-    if [[ -z "$ids" ]]; then
+    if [[ -z $ids ]]; then
         _forbut_warn "No items selected."
         return 0
     fi
 
     # Destructive operation — confirmation unless explicitly suppressed.
-    if [[ -z "${FORBUT_DISCARD_NO_CONFIRM:-}" ]]; then
+    if [[ -z ${FORBUT_DISCARD_NO_CONFIRM:-} ]]; then
         local count
         count=$(echo "$selected_ids" | wc -l | tr -d ' ')
         printf '%sDiscard %s item(s)? This cannot be undone. [y/N]:%s ' \
@@ -55,7 +55,7 @@ _forbut_discard() {
         local confirm
         read -r confirm
         case "$confirm" in
-            [yY]|[yY][eE][sS]) ;;
+            [yY] | [yY][eE][sS]) ;;
             *)
                 _forbut_info "Cancelled."
                 return 0
@@ -74,7 +74,7 @@ _forbut_discard() {
     local rc=0
     local file
     echo "$selected_ids" | while IFS= read -r file; do
-        [[ -z "$file" ]] && continue
+        [[ -z $file ]] && continue
         git checkout -- "$file" 2>/dev/null || rc=1
     done
     if [[ $rc -eq 0 ]]; then
@@ -90,19 +90,19 @@ _forbut_discard() {
 # ---------------------------------------------------------------------------
 _forbut_discard_preview() {
     local item_ref
-    if [[ "$1" == *"$_fbsep"* ]]; then
+    if [[ $1 == *"$_fbsep"* ]]; then
         item_ref="${1#*"$_fbsep"}"
     else
         item_ref="$1"
     fi
-    [[ -z "$item_ref" ]] && return
+    [[ -z $item_ref ]] && return
 
     local preview_pager
     preview_pager=$(_forbut_get_pager diff)
 
     local but_output
     but_output=$(_forbut_but diff --no-tui "$item_ref")
-    if [[ -n "$but_output" ]]; then
+    if [[ -n $but_output ]]; then
         echo "$but_output" | eval "$preview_pager"
         return
     fi

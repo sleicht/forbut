@@ -14,10 +14,13 @@ CYAN=$'\033[0;36m'
 BOLD=$'\033[1m'
 RESET=$'\033[0m'
 
-info()  { printf '%s[forbut]%s %s\n' "$CYAN" "$RESET" "$*"; }
-warn()  { printf '%s[forbut]%s %s\n' "$YELLOW" "$RESET" "$*"; }
-error() { printf '%s[forbut]%s %s\n' "$RED" "$RESET" "$*"; exit 1; }
-ok()    { printf '%s[forbut]%s %s\n' "$GREEN" "$RESET" "$*"; }
+info() { printf '%s[forbut]%s %s\n' "$CYAN" "$RESET" "$*"; }
+warn() { printf '%s[forbut]%s %s\n' "$YELLOW" "$RESET" "$*"; }
+error() {
+    printf '%s[forbut]%s %s\n' "$RED" "$RESET" "$*"
+    exit 1
+}
+ok() { printf '%s[forbut]%s %s\n' "$GREEN" "$RESET" "$*"; }
 
 usage() {
     cat <<EOF
@@ -52,11 +55,14 @@ UNINSTALL=0
 
 for arg in "$@"; do
     case "$arg" in
-        --prefix=*)  FORBUT_INSTALL_PREFIX="${arg#--prefix=}" ;;
-        --symlink)   SYMLINK=1 ;;
+        --prefix=*) FORBUT_INSTALL_PREFIX="${arg#--prefix=}" ;;
+        --symlink) SYMLINK=1 ;;
         --uninstall) UNINSTALL=1 ;;
-        -h|--help)   usage; exit 0 ;;
-        *)           error "Unknown option: $arg" ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        *) error "Unknown option: $arg" ;;
     esac
 done
 

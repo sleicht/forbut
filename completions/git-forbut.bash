@@ -13,20 +13,18 @@
 # Completion for git-forbut
 # This includes git aliases, e.g. "alias.fb=forbut diff" will correctly
 # complete available diff targets on "git fb".
-_git_forbut()
-{
+_git_forbut() {
     local subcommand cword cur prev cmds
 
     subcommand="${COMP_WORDS[1]}"
-    if [[ "$subcommand" != "forbut" ]]
-    then
+    if [[ $subcommand != "forbut" ]]; then
         # Forbut is called via a git alias. Get the original aliased subcommand
         # and proceed as if it was the previous word.
         prev=$(git config --get "alias.$subcommand" | cut -d' ' -f 2)
-        cword=$((${COMP_CWORD} + 1))
+        cword=$((COMP_CWORD + 1))
     else
         cword=${COMP_CWORD}
-        prev=${COMP_WORDS[COMP_CWORD-1]}
+        prev=${COMP_WORDS[COMP_CWORD - 1]}
     fi
 
     cur=${COMP_WORDS[COMP_CWORD]}
@@ -61,8 +59,7 @@ _git_forbut()
 }
 
 # Check if forbut plugin is loaded
-if [[ $(type -t forbut::switch) == function ]]
-then
+if [[ $(type -t forbut::switch) == function ]]; then
     # We're reusing existing git completion functions, so load those first
     # and check if completion function exists afterwards.
     _completion_loader git
@@ -73,7 +70,7 @@ then
     __git_complete forbut::diff _git_diff
 
     # Completion for forbut plugin shell aliases
-    if [[ -z "$FORBUT_NO_ALIASES" ]]; then
+    if [[ -z $FORBUT_NO_ALIASES ]]; then
         __git_complete "${FORBUT_DIFF_ALIAS}" _git_diff
     fi
 fi

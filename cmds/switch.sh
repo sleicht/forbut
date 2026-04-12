@@ -25,7 +25,7 @@ _forbut_switch_list() {
     # Real schema (verified against but 0.x):
     #   { "appliedStacks": [{"heads": [{"name", "lastCommitAt", ...}]}],
     #     "branches":      [{"name", ...}] }  # unapplied
-    if [[ -n "$json" ]] && echo "$json" | jq -e '(.appliedStacks // .branches) != null' >/dev/null 2>&1; then
+    if [[ -n $json ]] && echo "$json" | jq -e '(.appliedStacks // .branches) != null' >/dev/null 2>&1; then
         # Assert the fields we actually read from. Drift on either path
         # (applied or unapplied) trips the schema log.
         if ! _forbut_schema_assert "$json" '.appliedStacks | type == "array"' 'switch.appliedStacks'; then
@@ -49,7 +49,7 @@ _forbut_switch_list() {
     # Path 2: `but branch list` text output (current stable path)
     local text
     text=$(but branch list --all 2>/dev/null)
-    if [[ -n "$text" ]]; then
+    if [[ -n $text ]]; then
         echo "$text" | grep -E '^\s*(active|local|remote)\s' | while IFS= read -r line; do
             # Extract the branch name robustly: strip ANSI, drop leading marker,
             # pull the 3rd whitespace field, strip any '*' prefix.
@@ -58,7 +58,7 @@ _forbut_switch_list() {
             local clean="" name=""
             clean=$(echo "$line" | _forbut_strip_ansi)
             name=$(echo "$clean" | awk '{print $3}' | sed 's/^\*//')
-            [[ -z "$name" ]] && continue
+            [[ -z $name ]] && continue
             printf '%s%s%s\n' "$line" "$_fbsep" "$name"
         done
         return 0
@@ -68,7 +68,7 @@ _forbut_switch_list() {
     _forbut_git_branch_list | while IFS= read -r line; do
         local name=""
         name=$(echo "$line" | _forbut_extract_branch_name)
-        [[ -z "$name" ]] && continue
+        [[ -z $name ]] && continue
         printf '%s%s%s\n' "$line" "$_fbsep" "$name"
     done
 }
@@ -85,18 +85,18 @@ _forbut_switch() {
     local branch_name
     branch_name=$(
         _forbut_switch_list |
-        _forbut_fzf FORBUT_SWITCH_FZF_OPTS \
-            --delimiter="$_fbsep" \
-            --with-nth=1 \
-            --accept-nth=2 \
-            --header="$header" \
-            --preview="$preview_cmd" \
-            --bind="ctrl-x:execute-silent(but unapply {} 2>/dev/null)+reload($FORBUT preview switch_reload)" \
-            --bind="enter:accept"
+            _forbut_fzf FORBUT_SWITCH_FZF_OPTS \
+                --delimiter="$_fbsep" \
+                --with-nth=1 \
+                --accept-nth=2 \
+                --header="$header" \
+                --preview="$preview_cmd" \
+                --bind="ctrl-x:execute-silent(but unapply {} 2>/dev/null)+reload($FORBUT preview switch_reload)" \
+                --bind="enter:accept"
     )
 
     # fzf with --accept-nth=2 returns only the payload — clean, no awk.
-    if [[ -z "$branch_name" ]]; then
+    if [[ -z $branch_name ]]; then
         return 0
     fi
 
@@ -109,7 +109,7 @@ _forbut_switch() {
 # ---------------------------------------------------------------------------
 _forbut_switch_preview() {
     local branch="$1"
-    [[ -z "$branch" ]] && return
+    [[ -z $branch ]] && return
 
     but branch show "$branch" -f 2>/dev/null || {
         # Non-GitButler fallback: show git log for the branch

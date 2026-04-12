@@ -31,14 +31,14 @@ _forbut_diff() {
     local selected
     selected=$(
         _forbut_diff_file_list "$target" |
-        _forbut_fzf FORBUT_DIFF_FZF_OPTS \
-            --delimiter="$_fbsep" \
-            --with-nth=1 \
-            --accept-nth=2 \
-            --header="$header" \
-            --preview="$preview_cmd" \
-            --bind="enter:execute($FORBUT enter diff_enter {})" \
-            --no-sort
+            _forbut_fzf FORBUT_DIFF_FZF_OPTS \
+                --delimiter="$_fbsep" \
+                --with-nth=1 \
+                --accept-nth=2 \
+                --header="$header" \
+                --preview="$preview_cmd" \
+                --bind="enter:execute($FORBUT enter diff_enter {})" \
+                --no-sort
     )
     # selected holds the clean payload; discarded on empty/cancel.
 }
@@ -50,7 +50,7 @@ _forbut_diff_file_list() {
     local target="${1:-}"
 
     # Target mode: show the file list for a specific diff target (commit/stack).
-    if [[ -n "$target" ]]; then
+    if [[ -n $target ]]; then
         _forbut_diff_target_file_list "$target"
         return
     fi
@@ -58,7 +58,7 @@ _forbut_diff_file_list() {
     # Try but status -f -j (JSON) first.
     local json
     json=$(_forbut_but status -f -j)
-    if [[ -n "$json" ]] && echo "$json" | jq -e '.stacks // .unassignedChanges' >/dev/null 2>&1; then
+    if [[ -n $json ]] && echo "$json" | jq -e '.stacks // .unassignedChanges' >/dev/null 2>&1; then
         # Assert the fields we depend on. Schema drift tripwire.
         if ! _forbut_schema_assert "$json" '.unassignedChanges // [] | type == "array"' 'diff'; then
             return 1
@@ -76,7 +76,7 @@ _forbut_diff_target_file_list() {
     local target="$1"
     local json
     json=$(_forbut_but diff "$target" -j)
-    if [[ -n "$json" ]] && echo "$json" | jq -e '.changes // empty' >/dev/null 2>&1; then
+    if [[ -n $json ]] && echo "$json" | jq -e '.changes // empty' >/dev/null 2>&1; then
         if ! _forbut_schema_assert "$json" '.changes | type == "array"' 'diff-target'; then
             return 1
         fi
@@ -148,12 +148,12 @@ _forbut_diff_rows_from_json() {
 _forbut_diff_preview() {
     # fzf {} gives the full original line; extract the payload (field 2 after _fbsep).
     local ref
-    if [[ "$1" == *"$_fbsep"* ]]; then
+    if [[ $1 == *"$_fbsep"* ]]; then
         ref="${1#*"$_fbsep"}"
     else
         ref="$1"
     fi
-    [[ -z "$ref" ]] && return
+    [[ -z $ref ]] && return
 
     local preview_pager
     preview_pager=$(_forbut_get_pager diff)
@@ -165,10 +165,10 @@ _forbut_diff_preview() {
     filepath=$(_forbut_but diff "$ref" -j | grep -m1 '"path":' | sed 's/.*"path":[[:space:]]*"\([^"]*\)".*/\1/')
 
     # 1. Coloured git diff — best for worktree (unassigned) changes.
-    if [[ -n "$filepath" ]]; then
+    if [[ -n $filepath ]]; then
         output=$(git diff --color=always -- "$filepath" 2>/dev/null)
-        [[ -z "$output" ]] && output=$(git diff --cached --color=always -- "$filepath" 2>/dev/null)
-        if [[ -n "$output" ]]; then
+        [[ -z $output ]] && output=$(git diff --cached --color=always -- "$filepath" 2>/dev/null)
+        if [[ -n $output ]]; then
             echo "$output" | eval "$preview_pager"
             return
         fi
@@ -176,7 +176,7 @@ _forbut_diff_preview() {
 
     # 2. but diff --no-tui — works for committed changes; add ANSI colour.
     output=$(_forbut_but diff --no-tui "$ref")
-    if [[ -n "$output" ]]; then
+    if [[ -n $output ]]; then
         echo "$output" | _forbut_colorize_but_diff | eval "$preview_pager"
         return
     fi
@@ -191,12 +191,12 @@ _forbut_diff_preview() {
 _forbut_diff_enter() {
     # fzf {} gives the full original line; extract the payload (field 2 after _fbsep).
     local ref
-    if [[ "$1" == *"$_fbsep"* ]]; then
+    if [[ $1 == *"$_fbsep"* ]]; then
         ref="${1#*"$_fbsep"}"
     else
         ref="$1"
     fi
-    [[ -z "$ref" ]] && return
+    [[ -z $ref ]] && return
 
     local enter_pager
     enter_pager=$(_forbut_get_pager enter)
@@ -205,17 +205,17 @@ _forbut_diff_enter() {
     local filepath output
     filepath=$(_forbut_but diff "$ref" -j | grep -m1 '"path":' | sed 's/.*"path":[[:space:]]*"\([^"]*\)".*/\1/')
 
-    if [[ -n "$filepath" ]]; then
+    if [[ -n $filepath ]]; then
         output=$(git diff --color=always -- "$filepath" 2>/dev/null)
-        [[ -z "$output" ]] && output=$(git diff --cached --color=always -- "$filepath" 2>/dev/null)
-        if [[ -n "$output" ]]; then
+        [[ -z $output ]] && output=$(git diff --cached --color=always -- "$filepath" 2>/dev/null)
+        if [[ -n $output ]]; then
             echo "$output" | eval "$enter_pager"
             return
         fi
     fi
 
     output=$(_forbut_but diff --no-tui "$ref")
-    if [[ -n "$output" ]]; then
+    if [[ -n $output ]]; then
         echo "$output" | _forbut_colorize_but_diff | eval "$enter_pager"
         return
     fi

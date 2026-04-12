@@ -12,34 +12,34 @@ setup() {
 # ---------------------------------------------------------------------------
 @test "forbut --help shows usage" {
     run "$FORBUT" --help
-    [[ "$status" -eq 0 ]]
-    [[ "$output" == *"forbut"* ]]
-    [[ "$output" == *"USAGE"* ]]
+    [[ $status -eq 0 ]]
+    [[ $output == *"forbut"* ]]
+    [[ $output == *"USAGE"* ]]
 }
 
 @test "forbut help shows usage" {
     run "$FORBUT" help
-    [[ "$status" -eq 0 ]]
-    [[ "$output" == *"USAGE"* ]]
+    [[ $status -eq 0 ]]
+    [[ $output == *"USAGE"* ]]
 }
 
 @test "forbut with no args shows usage" {
     run "$FORBUT"
-    [[ "$status" -eq 0 ]]
-    [[ "$output" == *"USAGE"* ]]
+    [[ $status -eq 0 ]]
+    [[ $output == *"USAGE"* ]]
 }
 
 @test "forbut --version shows version" {
     run "$FORBUT" --version
-    [[ "$status" -eq 0 ]]
-    [[ "$output" == *"forbut"* ]]
-    [[ "$output" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]
+    [[ $status -eq 0 ]]
+    [[ $output == *"forbut"* ]]
+    [[ $output =~ [0-9]+\.[0-9]+\.[0-9]+ ]]
 }
 
 @test "forbut -v shows version" {
     run "$FORBUT" -v
-    [[ "$status" -eq 0 ]]
-    [[ "$output" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]
+    [[ $status -eq 0 ]]
+    [[ $output =~ [0-9]+\.[0-9]+\.[0-9]+ ]]
 }
 
 # ---------------------------------------------------------------------------
@@ -47,8 +47,8 @@ setup() {
 # ---------------------------------------------------------------------------
 @test "forbut unknown-command fails with error" {
     run "$FORBUT" unknown-command
-    [[ "$status" -ne 0 ]]
-    [[ "$output" == *"Unknown command"* ]]
+    [[ $status -ne 0 ]]
+    [[ $output == *"Unknown command"* ]]
 }
 
 # ---------------------------------------------------------------------------
@@ -57,18 +57,18 @@ setup() {
 @test "all command files are valid bash" {
     for f in "$FORBUT_INSTALL_DIR"/cmds/*.sh; do
         run bash -n "$f"
-        [[ "$status" -eq 0 ]]
+        [[ $status -eq 0 ]]
     done
 }
 
 @test "utils.sh is valid bash" {
     run bash -n "$FORBUT_INSTALL_DIR/lib/utils.sh"
-    [[ "$status" -eq 0 ]]
+    [[ $status -eq 0 ]]
 }
 
 @test "bin/git-forbut is valid bash" {
     run bash -n "$FORBUT"
-    [[ "$status" -eq 0 ]]
+    [[ $status -eq 0 ]]
 }
 
 # ---------------------------------------------------------------------------
@@ -81,6 +81,6 @@ setup() {
         source "$cmd_file"
     done
     run _forbut_reorder
-    [[ "$status" -eq 1 ]]
-    [[ "$output" == *"v0.2"* ]]
+    [[ $status -eq 1 ]]
+    [[ $output == *"v0.2"* ]]
 }

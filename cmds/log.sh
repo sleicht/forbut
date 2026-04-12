@@ -30,15 +30,15 @@ _forbut_log() {
     local sha
     sha=$(
         _forbut_log_list "$branch" |
-        _forbut_fzf FORBUT_LOG_FZF_OPTS \
-            --delimiter="$_fbsep" \
-            --with-nth=1 \
-            --accept-nth=2 \
-            --header="$header" \
-            --preview="$preview_cmd" \
-            --bind="ctrl-y:execute-silent(printf %s {} | ${FORBUT_COPY_CMD:-pbcopy} 2>/dev/null)" \
-            --bind="enter:execute($FORBUT enter log_enter {})" \
-            --no-sort
+            _forbut_fzf FORBUT_LOG_FZF_OPTS \
+                --delimiter="$_fbsep" \
+                --with-nth=1 \
+                --accept-nth=2 \
+                --header="$header" \
+                --preview="$preview_cmd" \
+                --bind="ctrl-y:execute-silent(printf %s {} | ${FORBUT_COPY_CMD:-pbcopy} 2>/dev/null)" \
+                --bind="enter:execute($FORBUT enter log_enter {})" \
+                --no-sort
     )
     # sha is discarded — the action already ran via the enter bind.
 }
@@ -49,7 +49,7 @@ _forbut_log() {
 _forbut_log_list() {
     local branch="${1:-}"
     local args=(--graph --color=always --format="$_FORBUT_LOG_FORMAT" --abbrev-commit --date=relative -200)
-    if [[ -n "$branch" ]]; then
+    if [[ -n $branch ]]; then
         git log "${args[@]}" "$branch" 2>/dev/null
     else
         git log "${args[@]}" 2>/dev/null
@@ -62,12 +62,12 @@ _forbut_log_list() {
 _forbut_log_preview() {
     # fzf {} gives the full original line; extract the payload (field 2 after _fbsep).
     local commit_id
-    if [[ "$1" == *"$_fbsep"* ]]; then
+    if [[ $1 == *"$_fbsep"* ]]; then
         commit_id="${1#*"$_fbsep"}"
     else
         commit_id="$1"
     fi
-    [[ -z "$commit_id" ]] && return
+    [[ -z $commit_id ]] && return
 
     local preview_pager
     preview_pager=$(_forbut_get_pager show)
@@ -76,7 +76,7 @@ _forbut_log_preview() {
     # _forbut_but strips sync banners; colorize adds ANSI to box-drawing diffs.
     local output
     output=$(_forbut_but show "$commit_id" 2>/dev/null)
-    if [[ -n "$output" ]]; then
+    if [[ -n $output ]]; then
         echo "$output" | _forbut_colorize_but_diff | eval "$preview_pager"
         return
     fi
@@ -90,12 +90,12 @@ _forbut_log_preview() {
 _forbut_log_enter() {
     # fzf {} gives the full original line; extract the payload (field 2 after _fbsep).
     local commit_id
-    if [[ "$1" == *"$_fbsep"* ]]; then
+    if [[ $1 == *"$_fbsep"* ]]; then
         commit_id="${1#*"$_fbsep"}"
     else
         commit_id="$1"
     fi
-    [[ -z "$commit_id" ]] && return
+    [[ -z $commit_id ]] && return
 
     local enter_pager
     enter_pager=$(_forbut_get_pager enter)
@@ -103,7 +103,7 @@ _forbut_log_enter() {
     # Same fallback chain as preview but with the interactive enter pager.
     local output
     output=$(_forbut_but show "$commit_id" 2>/dev/null)
-    if [[ -n "$output" ]]; then
+    if [[ -n $output ]]; then
         echo "$output" | _forbut_colorize_but_diff | eval "$enter_pager"
         return
     fi

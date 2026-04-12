@@ -19,12 +19,12 @@
 # ~/.local/bin/git-forbut -> ~/.local/share/forbut/bin/git-forbut.
 _forbut_resolve_script() {
     local src="${BASH_SOURCE[0]}"
-    while [[ -L "$src" ]]; do
+    while [[ -L $src ]]; do
         local dir
         dir="$(cd "$(dirname "$src")" && pwd)"
         src="$(readlink "$src")"
         # If readlink returned a relative path, resolve it from the dir
-        [[ "$src" != /* ]] && src="$dir/$src"
+        [[ $src != /* ]] && src="$dir/$src"
     done
     echo "$src"
 }
@@ -43,7 +43,7 @@ source "$FORBUT_INSTALL_DIR/lib/utils.sh"
 # Source command implementations
 # ---------------------------------------------------------------------------
 for cmd_file in "$FORBUT_INSTALL_DIR"/cmds/*.sh; do
-    [[ -f "$cmd_file" ]] && source "$cmd_file"
+    [[ -f $cmd_file ]] && source "$cmd_file"
 done
 
 # ---------------------------------------------------------------------------
@@ -117,11 +117,11 @@ _forbut_main() {
     local cmd="${1:-}"
 
     case "$cmd" in
-        -h|--help|help|"")
+        -h | --help | help | "")
             _forbut_usage
             return 0
             ;;
-        -v|--version|version)
+        -v | --version | version)
             echo "forbut $FORBUT_VERSION"
             return 0
             ;;
@@ -140,7 +140,7 @@ _forbut_main() {
     # Check if it's a known public command
     local found=0
     for c in "${FORBUT_PUBLIC_COMMANDS[@]}"; do
-        if [[ "$c" == "$cmd" ]]; then
+        if [[ $c == "$cmd" ]]; then
             found=1
             break
         fi
@@ -165,6 +165,6 @@ _forbut_main() {
 # ---------------------------------------------------------------------------
 # Entry guard: only run main() when executed directly (not sourced)
 # ---------------------------------------------------------------------------
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
     _forbut_main "$@"
 fi

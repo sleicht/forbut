@@ -20,7 +20,7 @@ setup() {
     mkdir -p "$mock_bin"
 
     # Mock `but` — dispatches on the first two argv tokens.
-    cat > "$mock_bin/but" <<EOF
+    cat >"$mock_bin/but" <<EOF
 #!/usr/bin/env bash
 FIXTURES="$fixtures"
 case "\$1 \$2" in
@@ -74,7 +74,7 @@ count_delimited_rows() {
 @test "unassigned_list emits one row per unassigned change" {
     local count
     count=$(_forbut_unassigned_list | count_delimited_rows)
-    [[ "$count" -eq 3 ]]
+    [[ $count -eq 3 ]]
 }
 
 @test "unassigned_list payload is the cliId (pz/ro/wt in fixture)" {
@@ -92,7 +92,7 @@ count_delimited_rows() {
 @test "unassigned_list display marks 'added' files with [A]" {
     local added
     added=$(_forbut_unassigned_list | grep -cF '[A]')
-    [[ "$added" -eq 3 ]]
+    [[ $added -eq 3 ]]
 }
 
 # ===========================================================================
@@ -102,7 +102,7 @@ count_delimited_rows() {
     # Fixture: 3 unassigned + 1 assigned + 4 committed = 8 rows
     local count
     count=$(_forbut_diff_file_list | count_delimited_rows)
-    [[ "$count" -eq 8 ]]
+    [[ $count -eq 8 ]]
 }
 
 @test "diff_file_list labels unassigned rows" {
@@ -138,7 +138,7 @@ count_delimited_rows() {
 @test "switch_list payload exactly equals the branch name (no markers/ANSI)" {
     local payload
     payload=$(_forbut_switch_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
-    [[ "$payload" == "feature/alpha" ]]
+    [[ $payload == "feature/alpha" ]]
 }
 
 # ===========================================================================
@@ -149,14 +149,14 @@ count_delimited_rows() {
     cd "$FORBUT_INSTALL_DIR"
     local count
     count=$(_forbut_log_list | count_delimited_rows)
-    [[ "$count" -gt 0 ]]
+    [[ $count -gt 0 ]]
 }
 
 @test "log_list first-row payload is a short git SHA" {
     cd "$FORBUT_INSTALL_DIR"
     local payload
     payload=$(_forbut_log_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
-    [[ "$payload" =~ ^[a-f0-9]{7,}$ ]]
+    [[ $payload =~ ^[a-f0-9]{7,}$ ]]
 }
 
 # ===========================================================================
@@ -165,7 +165,7 @@ count_delimited_rows() {
 @test "_forbut_preview dispatches to a named preview function" {
     _forbut_test_fn() { echo "called:$1"; }
     run _forbut_preview test_fn myarg
-    [[ "$output" == "called:myarg" ]]
+    [[ $output == "called:myarg" ]]
 }
 
 # ===========================================================================
@@ -173,12 +173,12 @@ count_delimited_rows() {
 # ===========================================================================
 @test "schema_assert fails when required field is missing" {
     run _forbut_schema_assert '{"unexpected":"shape"}' '.unassignedChanges | type == "array"' 'bats'
-    [[ "$status" -ne 0 ]]
+    [[ $status -ne 0 ]]
 }
 
 @test "schema_assert passes when field is present" {
     run _forbut_schema_assert '{"unassignedChanges":[]}' '.unassignedChanges | type == "array"' 'bats'
-    [[ "$status" -eq 0 ]]
+    [[ $status -eq 0 ]]
 }
 
 @test "schema_assert writes a drift record to the log on failure" {
@@ -195,6 +195,6 @@ count_delimited_rows() {
 # ===========================================================================
 @test "reorder emits v0.2 stub message" {
     run _forbut_reorder
-    [[ "$status" -eq 1 ]]
-    [[ "$output" == *"v0.2"* ]]
+    [[ $status -eq 1 ]]
+    [[ $output == *"v0.2"* ]]
 }

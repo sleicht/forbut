@@ -32,17 +32,17 @@ _forbut_assign() {
     local selected_ids
     selected_ids=$(
         _forbut_unassigned_list |
-        _forbut_fzf FORBUT_ASSIGN_FZF_OPTS \
-            --delimiter="$_fbsep" \
-            --with-nth=1 \
-            --accept-nth=2 \
-            --header="$header" \
-            --preview="$preview_cmd" \
-            --multi \
-            --bind="ctrl-a:select-all"
+            _forbut_fzf FORBUT_ASSIGN_FZF_OPTS \
+                --delimiter="$_fbsep" \
+                --with-nth=1 \
+                --accept-nth=2 \
+                --header="$header" \
+                --preview="$preview_cmd" \
+                --multi \
+                --bind="ctrl-a:select-all"
     )
 
-    if [[ -z "$selected_ids" ]]; then
+    if [[ -z $selected_ids ]]; then
         return 0
     fi
 
@@ -51,7 +51,7 @@ _forbut_assign() {
     local hunk_ids
     hunk_ids=$(echo "$selected_ids" | paste -sd ',' -)
 
-    if [[ -z "$hunk_ids" ]]; then
+    if [[ -z $hunk_ids ]]; then
         _forbut_warn "No hunks selected."
         return 0
     fi
@@ -65,16 +65,16 @@ _forbut_assign() {
     local target_branch
     target_branch=$(
         _forbut_switch_list |
-        _forbut_fzf FORBUT_ASSIGN_BRANCH_FZF_OPTS \
-            --delimiter="$_fbsep" \
-            --with-nth=1 \
-            --accept-nth=2 \
-            --header="$branch_header" \
-            --preview="$FORBUT preview switch_preview {}" \
-            --no-multi
+            _forbut_fzf FORBUT_ASSIGN_BRANCH_FZF_OPTS \
+                --delimiter="$_fbsep" \
+                --with-nth=1 \
+                --accept-nth=2 \
+                --header="$branch_header" \
+                --preview="$FORBUT preview switch_preview {}" \
+                --no-multi
     )
 
-    if [[ -z "$target_branch" ]]; then
+    if [[ -z $target_branch ]]; then
         _forbut_warn "No branch selected."
         return 0
     fi
@@ -98,19 +98,19 @@ _forbut_assign() {
 # ---------------------------------------------------------------------------
 _forbut_assign_preview() {
     local hunk_ref
-    if [[ "$1" == *"$_fbsep"* ]]; then
+    if [[ $1 == *"$_fbsep"* ]]; then
         hunk_ref="${1#*"$_fbsep"}"
     else
         hunk_ref="$1"
     fi
-    [[ -z "$hunk_ref" ]] && return
+    [[ -z $hunk_ref ]] && return
 
     local preview_pager
     preview_pager=$(_forbut_get_pager diff)
 
     local but_output
     but_output=$(_forbut_but diff --no-tui "$hunk_ref")
-    if [[ -n "$but_output" ]]; then
+    if [[ -n $but_output ]]; then
         echo "$but_output" | eval "$preview_pager"
         return
     fi

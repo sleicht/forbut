@@ -24,15 +24,15 @@ _state_file() {
 
 setup_file() {
     STATE=$(_state_file)
-    : > "$STATE"
+    : >"$STATE"
 
-    if [[ "${FORBUT_SKIP_INTEGRATION:-}" == "1" ]]; then
-        echo 'SKIP_REASON="FORBUT_SKIP_INTEGRATION=1"' > "$STATE"
+    if [[ ${FORBUT_SKIP_INTEGRATION:-} == "1" ]]; then
+        echo 'SKIP_REASON="FORBUT_SKIP_INTEGRATION=1"' >"$STATE"
         return 0
     fi
 
     if ! command -v but >/dev/null 2>&1; then
-        echo 'SKIP_REASON="but CLI not on PATH"' > "$STATE"
+        echo 'SKIP_REASON="but CLI not on PATH"' >"$STATE"
         return 0
     fi
 
@@ -55,7 +55,7 @@ setup_file() {
     cd "$INTEGRATION_WORK" || return 1
     git config user.email forbut-integration@example.invalid
     git config user.name "forbut integration"
-    echo "# integration fixture" > README.md
+    echo "# integration fixture" >README.md
     git add README.md
     git commit -q -m "initial commit"
     git branch -M main
@@ -68,7 +68,7 @@ setup_file() {
         {
             echo 'SKIP_REASON="but setup failed (likely permission/state issue)"'
             echo "INTEGRATION_WORK=\"$INTEGRATION_WORK\""
-        } > "$STATE"
+        } >"$STATE"
         return 0
     fi
 
@@ -78,21 +78,21 @@ setup_file() {
     #    ALL unassigned changes into the commit — so we must commit on
     #    an otherwise-clean worktree, then create new unassigned files.
     but branch new feature/alpha >/dev/null 2>&1 || true
-    but branch new feature/beta  >/dev/null 2>&1 || true
-    echo "initial alpha change" > alpha-committed.txt
+    but branch new feature/beta >/dev/null 2>&1 || true
+    echo "initial alpha change" >alpha-committed.txt
     local alpha_id
     alpha_id=$(but status -f -j 2>/dev/null |
-                 jq -r '.unassignedChanges[] | select(.filePath=="alpha-committed.txt") | .cliId')
-    if [[ -n "$alpha_id" ]]; then
+        jq -r '.unassignedChanges[] | select(.filePath=="alpha-committed.txt") | .cliId')
+    if [[ -n $alpha_id ]]; then
         but stage "$alpha_id" feature/alpha >/dev/null 2>&1 || true
         but commit feature/alpha -m "integration seed commit" >/dev/null 2>&1 || true
     fi
 
     # 5. Now populate the unassigned area with varied changes — these
     #    should stay unassigned through the rest of the test.
-    echo "modified content" >> README.md
-    echo "plain add"        > newfile.txt
-    echo "spaces add"       > "file with spaces.txt"
+    echo "modified content" >>README.md
+    echo "plain add" >newfile.txt
+    echo "spaces add" >"file with spaces.txt"
 
     # 6. Persist state for the per-test setup() and teardown_file.
     {
@@ -102,25 +102,25 @@ setup_file() {
         echo "INTEGRATION_REMOTE=\"$INTEGRATION_REMOTE\""
         echo "GIT_CONFIG_GLOBAL=\"$GIT_CONFIG_GLOBAL\""
         echo "XDG_STATE_HOME=\"$XDG_STATE_HOME\""
-    } > "$STATE"
+    } >"$STATE"
 }
 
 teardown_file() {
     local STATE
     STATE=$(_state_file)
-    [[ -f "$STATE" ]] && source "$STATE"
-    if [[ -n "${INTEGRATION_WORK:-}" ]] && [[ -d "$INTEGRATION_WORK" ]]; then
-        ( cd "$INTEGRATION_WORK" && but teardown >/dev/null 2>&1 || true )
+    [[ -f $STATE ]] && source "$STATE"
+    if [[ -n ${INTEGRATION_WORK:-} ]] && [[ -d $INTEGRATION_WORK ]]; then
+        (cd "$INTEGRATION_WORK" && but teardown >/dev/null 2>&1 || true)
     fi
 }
 
 setup() {
     local STATE
     STATE=$(_state_file)
-    if [[ -f "$STATE" ]]; then
+    if [[ -f $STATE ]]; then
         source "$STATE"
     fi
-    if [[ -n "${SKIP_REASON:-}" ]]; then
+    if [[ -n ${SKIP_REASON:-} ]]; then
         skip "$SKIP_REASON"
     fi
     export FORBUT_INSTALL_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
@@ -137,7 +137,7 @@ setup() {
 @test "but status -f -j returns valid JSON in the integration repo" {
     local json
     json=$(but status -f -j 2>/dev/null)
-    [[ -n "$json" ]]
+    [[ -n $json ]]
     echo "$json" | jq -e '.unassignedChanges | type == "array"' >/dev/null
     echo "$json" | jq -e '.stacks | type == "array"' >/dev/null
 }
@@ -145,7 +145,7 @@ setup() {
 @test "but branch list --all -j returns valid JSON" {
     local json
     json=$(but branch list --all -j 2>/dev/null)
-    [[ -n "$json" ]]
+    [[ -n $json ]]
     echo "$json" | jq -e '.appliedStacks // .branches' >/dev/null
 }
 
@@ -155,16 +155,16 @@ setup() {
 @test "integration: unassigned_list emits at least one row" {
     local out
     out=$(_forbut_unassigned_list)
-    [[ -n "$out" ]]
+    [[ -n $out ]]
     local count
     count=$(echo "$out" | awk -v FS="$_fbsep" 'NF >= 2 && length($2) > 0 { n++ } END { print n+0 }')
-    [[ "$count" -ge 1 ]]
+    [[ $count -ge 1 ]]
 }
 
 @test "integration: unassigned_list payload is a short cliId (2 lowercase chars)" {
     local payload
     payload=$(_forbut_unassigned_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
-    [[ "$payload" =~ ^[a-z]{2,}$ ]]
+    [[ $payload =~ ^[a-z]{2,}$ ]]
 }
 
 @test "integration: unassigned_list preserves filename with spaces" {
@@ -177,7 +177,7 @@ setup() {
 @test "integration: diff_file_list emits unassigned + assigned + committed rows" {
     local out
     out=$(_forbut_diff_file_list)
-    [[ -n "$out" ]]
+    [[ -n $out ]]
     echo "$out" | grep -qF '(unassigned)'
     echo "$out" | grep -q 'commit:' ||
         skip "no committed changes present (likely commit failed)"
@@ -188,7 +188,7 @@ setup() {
     out=$(_forbut_diff_file_list)
     bad=$(echo "$out" |
         awk -v FS="$_fbsep" 'NF < 2 || length($2) == 0 { print; c++ } END { exit (c>0?1:0) }') || true
-    [[ -z "$bad" ]]
+    [[ -z $bad ]]
 }
 
 # ---------------------------------------------------------------------------
@@ -198,17 +198,17 @@ setup() {
     local out count
     out=$(_forbut_switch_list)
     count=$(echo "$out" | awk -v FS="$_fbsep" 'NF >= 2 { n++ } END { print n+0 }')
-    [[ "$count" -ge 1 ]]
+    [[ $count -ge 1 ]]
 }
 
 @test "integration: switch_list payload is a valid branch name" {
     local payload
     payload=$(_forbut_switch_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
     # Must not contain ANSI escapes, markers, or spaces
-    [[ -n "$payload" ]]
-    [[ "$payload" != *$'\x1b'* ]]
-    [[ "$payload" != *"*"* ]]
-    [[ "$payload" != *" "* ]]
+    [[ -n $payload ]]
+    [[ $payload != *$'\x1b'* ]]
+    [[ $payload != *"*"* ]]
+    [[ $payload != *" "* ]]
 }
 
 @test "integration: switch_list includes our seeded feature/ branch" {
@@ -221,13 +221,13 @@ setup() {
 @test "integration: log_list emits at least one commit row" {
     local count
     count=$(_forbut_log_list | awk -v FS="$_fbsep" 'NF >= 2 { n++ } END { print n+0 }')
-    [[ "$count" -ge 1 ]]
+    [[ $count -ge 1 ]]
 }
 
 @test "integration: log_list payload is a short git SHA" {
     local payload
     payload=$(_forbut_log_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
-    [[ "$payload" =~ ^[a-f0-9]{7,}$ ]]
+    [[ $payload =~ ^[a-f0-9]{7,}$ ]]
 }
 
 # ---------------------------------------------------------------------------
@@ -237,5 +237,5 @@ setup() {
     local fake_json
     fake_json=$(but status -f -j 2>/dev/null | jq 'del(.unassignedChanges)')
     run _forbut_schema_assert "$fake_json" '.unassignedChanges | type == "array"' 'bats-integration'
-    [[ "$status" -ne 0 ]]
+    [[ $status -ne 0 ]]
 }
