@@ -122,12 +122,12 @@ setup() {
 }
 
 # ---------------------------------------------------------------------------
-# Display/payload separator (_FBSEP) + text extraction helpers
+# Display/payload separator (_fbsep) + text extraction helpers
 # ---------------------------------------------------------------------------
-@test "_FBSEP is defined as 0x1f 0x1e" {
-    [[ -n "$_FBSEP" ]]
+@test "_fbsep is defined as 0x1f 0x1e" {
+    [[ -n "$_fbsep" ]]
     local hex
-    hex=$(printf '%s' "$_FBSEP" | od -An -tx1 | tr -d ' \n')
+    hex=$(printf '%s' "$_fbsep" | od -An -tx1 | tr -d ' \n')
     [[ "$hex" == "1f1e" ]]
 }
 

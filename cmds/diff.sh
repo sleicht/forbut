@@ -2,10 +2,10 @@
 # cmds/diff.sh — forbut::diff
 # Browse changed files with inline diff preview.
 #
-# JSON-first: `but status -f -j` → jq → _FBSEP-delimited rows.
+# JSON-first: `but status -f -j` → jq → _fbsep-delimited rows.
 # Fallback: pure-git porcelain for non-GitButler repos.
 #
-# Row shape: <coloured display>${_FBSEP}<cli_id-or-path>
+# Row shape: <coloured display>${_fbsep}<cli_id-or-path>
 #   display  — shown in fzf (status, file path, location tag)
 #   payload  — returned by fzf via --accept-nth=2. Either a but CLI ID
 #              (e.g. "ur", "ae", "sv:ae") or a git file path.
@@ -13,7 +13,7 @@
 # Maps to: but diff <target>
 # Forgit equivalent: forgit::diff
 
-_forbut_cmd_diff() {
+_forbut_diff() {
     local target="${1:-}"
 
     local header
@@ -24,7 +24,7 @@ _forbut_cmd_diff() {
     local pager
     pager=$(_forbut_get_pager diff)
 
-    local preview_cmd="$FORBUT _preview diff_file {}"
+    local preview_cmd="$FORBUT preview diff_preview {}"
 
     # fzf returns only the payload (field 2), so enter-bind runs against {}.
     # Use but diff first, fall back to git diff if the payload is a file path.
@@ -32,19 +32,19 @@ _forbut_cmd_diff() {
     selected=$(
         _forbut_diff_file_list "$target" |
         _forbut_fzf FORBUT_DIFF_FZF_OPTS \
-            --delimiter="$_FBSEP" \
+            --delimiter="$_fbsep" \
             --with-nth=1 \
             --accept-nth=2 \
             --header="$header" \
             --preview="$preview_cmd" \
-            --bind="enter:execute($FORBUT _enter diff_file {})" \
+            --bind="enter:execute($FORBUT enter diff_enter {})" \
             --no-sort
     )
     # selected holds the clean payload; discarded on empty/cancel.
 }
 
 # ---------------------------------------------------------------------------
-# Unified list helper — emits _FBSEP rows from either JSON or git
+# Unified list helper — emits _fbsep rows from either JSON or git
 # ---------------------------------------------------------------------------
 _forbut_diff_file_list() {
     local target="${1:-}"
@@ -67,11 +67,11 @@ _forbut_diff_file_list() {
         return
     fi
 
-    # Non-GitButler fallback: porcelain with _FBSEP already embedded.
+    # Non-GitButler fallback: porcelain with _fbsep already embedded.
     _forbut_worktree_changes
 }
 
-# Build _FBSEP-delimited rows for a specific but diff target.
+# Build _fbsep-delimited rows for a specific but diff target.
 _forbut_diff_target_file_list() {
     local target="$1"
     local json
@@ -80,7 +80,7 @@ _forbut_diff_target_file_list() {
         if ! _forbut_schema_assert "$json" '.changes | type == "array"' 'diff-target'; then
             return 1
         fi
-        echo "$json" | jq -r --arg sep "$_FBSEP" '
+        echo "$json" | jq -r --arg sep "$_fbsep" '
             .changes // [] | .[] |
             (.status // "modified") as $s |
             (if   $s == "modified" then "\u001b[33m[M]\u001b[0m"
@@ -108,7 +108,7 @@ _forbut_diff_target_file_list() {
 #   .stacks[].branches[].commits[].changes[].{cliId, filePath, changeType}
 _forbut_diff_rows_from_json() {
     local json="$1"
-    echo "$json" | jq -r --arg sep "$_FBSEP" '
+    echo "$json" | jq -r --arg sep "$_fbsep" '
         def marker:
             if   . == "modified" then "\u001b[33m[M]\u001b[0m"
             elif . == "added"    then "\u001b[32m[A]\u001b[0m"
@@ -145,11 +145,11 @@ _forbut_diff_rows_from_json() {
 # ---------------------------------------------------------------------------
 # Preview: render the diff for a payload (CLI ID or file path)
 # ---------------------------------------------------------------------------
-_forbut_preview_diff_file() {
-    # fzf {} gives the full original line; extract the payload (field 2 after _FBSEP).
+_forbut_diff_preview() {
+    # fzf {} gives the full original line; extract the payload (field 2 after _fbsep).
     local ref
-    if [[ "$1" == *"$_FBSEP"* ]]; then
-        ref="${1#*"$_FBSEP"}"
+    if [[ "$1" == *"$_fbsep"* ]]; then
+        ref="${1#*"$_fbsep"}"
     else
         ref="$1"
     fi
@@ -188,11 +188,11 @@ _forbut_preview_diff_file() {
 # ---------------------------------------------------------------------------
 # Enter: open full-screen interactive diff (TUI) for the selected item
 # ---------------------------------------------------------------------------
-_forbut_enter_diff_file() {
-    # fzf {} gives the full original line; extract the payload (field 2 after _FBSEP).
+_forbut_diff_enter() {
+    # fzf {} gives the full original line; extract the payload (field 2 after _fbsep).
     local ref
-    if [[ "$1" == *"$_FBSEP"* ]]; then
-        ref="${1#*"$_FBSEP"}"
+    if [[ "$1" == *"$_fbsep"* ]]; then
+        ref="${1#*"$_fbsep"}"
     else
         ref="$1"
     fi

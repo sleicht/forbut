@@ -157,13 +157,13 @@ setup() {
     out=$(_forbut_unassigned_list)
     [[ -n "$out" ]]
     local count
-    count=$(echo "$out" | awk -v FS="$_FBSEP" 'NF >= 2 && length($2) > 0 { n++ } END { print n+0 }')
+    count=$(echo "$out" | awk -v FS="$_fbsep" 'NF >= 2 && length($2) > 0 { n++ } END { print n+0 }')
     [[ "$count" -ge 1 ]]
 }
 
 @test "integration: unassigned_list payload is a short cliId (2 lowercase chars)" {
     local payload
-    payload=$(_forbut_unassigned_list | head -1 | awk -v FS="$_FBSEP" '{print $2}')
+    payload=$(_forbut_unassigned_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
     [[ "$payload" =~ ^[a-z]{2,}$ ]]
 }
 
@@ -183,11 +183,11 @@ setup() {
         skip "no committed changes present (likely commit failed)"
 }
 
-@test "integration: diff_file_list all rows have valid _FBSEP delimiter" {
+@test "integration: diff_file_list all rows have valid _fbsep delimiter" {
     local out bad
     out=$(_forbut_diff_file_list)
     bad=$(echo "$out" |
-        awk -v FS="$_FBSEP" 'NF < 2 || length($2) == 0 { print; c++ } END { exit (c>0?1:0) }') || true
+        awk -v FS="$_fbsep" 'NF < 2 || length($2) == 0 { print; c++ } END { exit (c>0?1:0) }') || true
     [[ -z "$bad" ]]
 }
 
@@ -197,13 +197,13 @@ setup() {
 @test "integration: switch_list emits at least one applied branch" {
     local out count
     out=$(_forbut_switch_list)
-    count=$(echo "$out" | awk -v FS="$_FBSEP" 'NF >= 2 { n++ } END { print n+0 }')
+    count=$(echo "$out" | awk -v FS="$_fbsep" 'NF >= 2 { n++ } END { print n+0 }')
     [[ "$count" -ge 1 ]]
 }
 
 @test "integration: switch_list payload is a valid branch name" {
     local payload
-    payload=$(_forbut_switch_list | head -1 | awk -v FS="$_FBSEP" '{print $2}')
+    payload=$(_forbut_switch_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
     # Must not contain ANSI escapes, markers, or spaces
     [[ -n "$payload" ]]
     [[ "$payload" != *$'\x1b'* ]]
@@ -212,7 +212,7 @@ setup() {
 }
 
 @test "integration: switch_list includes our seeded feature/ branch" {
-    _forbut_switch_list | grep -qE "${_FBSEP}feature/(alpha|beta)\$"
+    _forbut_switch_list | grep -qE "${_fbsep}feature/(alpha|beta)\$"
 }
 
 # ---------------------------------------------------------------------------
@@ -220,13 +220,13 @@ setup() {
 # ---------------------------------------------------------------------------
 @test "integration: log_list emits at least one commit row" {
     local count
-    count=$(_forbut_log_list | awk -v FS="$_FBSEP" 'NF >= 2 { n++ } END { print n+0 }')
+    count=$(_forbut_log_list | awk -v FS="$_fbsep" 'NF >= 2 { n++ } END { print n+0 }')
     [[ "$count" -ge 1 ]]
 }
 
 @test "integration: log_list payload is a short git SHA" {
     local payload
-    payload=$(_forbut_log_list | head -1 | awk -v FS="$_FBSEP" '{print $2}')
+    payload=$(_forbut_log_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
     [[ "$payload" =~ ^[a-f0-9]{7,}$ ]]
 }
 

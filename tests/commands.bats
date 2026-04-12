@@ -5,7 +5,7 @@
 #   1. Source lib/utils.sh + cmds/*.sh
 #   2. Put a mock `but` shim on PATH that echoes fixture files based on argv
 #   3. Call the _forbut_*_list helpers directly and assert on the
-#      _FBSEP-delimited row shape they produce.
+#      _fbsep-delimited row shape they produce.
 #
 # The goal is to lock in the JSON→row contract so that drift in the
 # real `but` CLI shows up as a failing test here, with a clear diff
@@ -14,7 +14,7 @@
 
 setup() {
     export FORBUT_INSTALL_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
-    export FORBUT="$FORBUT_INSTALL_DIR/bin/forbut"
+    export FORBUT="$FORBUT_INSTALL_DIR/bin/git-forbut"
     local fixtures="$FORBUT_INSTALL_DIR/tests/fixtures"
     local mock_bin="$BATS_TEST_TMPDIR/bin"
     mkdir -p "$mock_bin"
@@ -50,21 +50,21 @@ EOF
 # Row-parsing helpers
 # ---------------------------------------------------------------------------
 count_delimited_rows() {
-    awk -v FS="$_FBSEP" 'NF >= 2 && length($2) > 0 { n++ } END { print n+0 }'
+    awk -v FS="$_fbsep" 'NF >= 2 && length($2) > 0 { n++ } END { print n+0 }'
 }
 
 # ===========================================================================
 # Function existence (quick sanity — richer tests exercise behaviour below)
 # ===========================================================================
-@test "all _forbut_cmd_* command functions are defined" {
+@test "all _forbut_* command functions are defined" {
     for fn in switch log diff assign discard reorder; do
-        declare -f "_forbut_cmd_$fn" >/dev/null
+        declare -f "_forbut_$fn" >/dev/null
     done
 }
 
-@test "all _forbut_preview_* functions are defined" {
-    for fn in switch_branch log_commit diff_file assign_hunk discard_item; do
-        declare -f "_forbut_preview_$fn" >/dev/null
+@test "all _forbut_*_preview functions are defined" {
+    for fn in switch_preview log_preview diff_preview assign_preview discard_preview; do
+        declare -f "_forbut_$fn" >/dev/null
     done
 }
 
@@ -80,9 +80,9 @@ count_delimited_rows() {
 @test "unassigned_list payload is the cliId (pz/ro/wt in fixture)" {
     local out
     out=$(_forbut_unassigned_list)
-    echo "$out" | grep -q "${_FBSEP}pz"
-    echo "$out" | grep -q "${_FBSEP}ro"
-    echo "$out" | grep -q "${_FBSEP}wt"
+    echo "$out" | grep -q "${_fbsep}pz"
+    echo "$out" | grep -q "${_fbsep}ro"
+    echo "$out" | grep -q "${_fbsep}wt"
 }
 
 @test "unassigned_list preserves filenames containing spaces" {
@@ -121,14 +121,14 @@ count_delimited_rows() {
     # Fixture commit cliIds are '35:rl', '35:zu', etc. — check format.
     local out
     out=$(_forbut_diff_file_list)
-    echo "$out" | grep -qE "${_FBSEP}35:[a-z]+$"
+    echo "$out" | grep -qE "${_fbsep}35:[a-z]+$"
 }
 
 # ===========================================================================
 # _forbut_switch_list — JSON path (real but branch list --all -j shape)
 # ===========================================================================
 @test "switch_list extracts applied branch from appliedStacks[].heads[]" {
-    _forbut_switch_list | grep -q "${_FBSEP}feature/alpha"
+    _forbut_switch_list | grep -q "${_fbsep}feature/alpha"
 }
 
 @test "switch_list display shows [applied] tag after ANSI strip" {
@@ -137,14 +137,14 @@ count_delimited_rows() {
 
 @test "switch_list payload exactly equals the branch name (no markers/ANSI)" {
     local payload
-    payload=$(_forbut_switch_list | head -1 | awk -v FS="$_FBSEP" '{print $2}')
+    payload=$(_forbut_switch_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
     [[ "$payload" == "feature/alpha" ]]
 }
 
 # ===========================================================================
 # _forbut_log_list — exercises the %x1f%x1e embedded separator
 # ===========================================================================
-@test "log_list emits rows with embedded _FBSEP (from forbut's own git log)" {
+@test "log_list emits rows with embedded _fbsep (from forbut's own git log)" {
     # log.sh uses git log, so it works inside any real git repo with commits.
     cd "$FORBUT_INSTALL_DIR"
     local count
@@ -155,7 +155,7 @@ count_delimited_rows() {
 @test "log_list first-row payload is a short git SHA" {
     cd "$FORBUT_INSTALL_DIR"
     local payload
-    payload=$(_forbut_log_list | head -1 | awk -v FS="$_FBSEP" '{print $2}')
+    payload=$(_forbut_log_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
     [[ "$payload" =~ ^[a-f0-9]{7,}$ ]]
 }
 
@@ -163,7 +163,7 @@ count_delimited_rows() {
 # Preview dispatcher
 # ===========================================================================
 @test "_forbut_preview dispatches to a named preview function" {
-    _forbut_preview_test_fn() { echo "called:$1"; }
+    _forbut_test_fn() { echo "called:$1"; }
     run _forbut_preview test_fn myarg
     [[ "$output" == "called:myarg" ]]
 }
@@ -194,7 +194,7 @@ count_delimited_rows() {
 # Reorder stub (unchanged from old suite)
 # ===========================================================================
 @test "reorder emits v0.2 stub message" {
-    run _forbut_cmd_reorder
+    run _forbut_reorder
     [[ "$status" -eq 1 ]]
     [[ "$output" == *"v0.2"* ]]
 }

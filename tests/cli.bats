@@ -1,9 +1,9 @@
 #!/usr/bin/env bats
-# tests/cli.bats — tests for bin/forbut CLI dispatch
+# tests/cli.bats — tests for bin/git-forbut CLI dispatch
 
 setup() {
     export FORBUT_INSTALL_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
-    export FORBUT="$FORBUT_INSTALL_DIR/bin/forbut"
+    export FORBUT="$FORBUT_INSTALL_DIR/bin/git-forbut"
     chmod +x "$FORBUT"
 }
 
@@ -66,7 +66,7 @@ setup() {
     [[ "$status" -eq 0 ]]
 }
 
-@test "bin/forbut is valid bash" {
+@test "bin/git-forbut is valid bash" {
     run bash -n "$FORBUT"
     [[ "$status" -eq 0 ]]
 }
@@ -80,7 +80,7 @@ setup() {
     for cmd_file in "$FORBUT_INSTALL_DIR"/cmds/*.sh; do
         source "$cmd_file"
     done
-    run _forbut_cmd_reorder
+    run _forbut_reorder
     [[ "$status" -eq 1 ]]
     [[ "$output" == *"v0.2"* ]]
 }

@@ -167,31 +167,31 @@ _forbut_require_repo() {
 # Preview dispatcher (self-invocation pattern)
 # ---------------------------------------------------------------------------
 # When fzf needs a preview, it calls back into forbut with:
-#   forbut _preview <func> <args...>
+#   forbut preview <func> <args...>
 # This ensures all helpers are available in the preview subprocess.
 _forbut_preview() {
     local cmd="$1"; shift
     export FORBUT_IN_PREVIEW=1
-    "_forbut_preview_${cmd}" "$@"
+    "_forbut_${cmd}" "$@"
 }
 
 _forbut_enter() {
     local cmd="$1"; shift
-    "_forbut_enter_${cmd}" "$@"
+    "_forbut_${cmd}" "$@"
 }
 
 # ===========================================================================
 # forgit-aligned helpers (ported from bin/git-forgit)
 # ===========================================================================
 # These replace the earlier ad-hoc parsing approach. Every fuzzy picker in
-# forbut produces rows shaped as: <display>${_FBSEP}<payload>
+# forbut produces rows shaped as: <display>${_fbsep}<payload>
 # fzf then shows field 1 (display) and returns field 2 (payload) via
 # --delimiter/--with-nth=1/--accept-nth=2. Commands never parse display text.
 
 # Internal display/payload separator. Lowercase because it's an implementation
 # detail; users should never override it. (US = 0x1f, RS = 0x1e — unlikely to
 # appear in git output, file paths, branch names, or commit messages.)
-_FBSEP=$'\x1f\x1e'
+_fbsep=$'\x1f\x1e'
 
 # FORBUT_FZF_DEFAULT_OPTS — users can override in their shell config to tweak
 # global forbut fzf behaviour. Per-command FORBUT_<CMD>_FZF_OPTS still layer on
@@ -270,7 +270,7 @@ _forbut_git_branch_list() {
 
 # Worktree changes in porcelain form, with null-terminated paths so filenames
 # with spaces/newlines/backslashes survive intact. Output is one line per
-# entry, shaped as: <coloured [status] display>${_FBSEP}<absolute path>
+# entry, shaped as: <coloured [status] display>${_fbsep}<absolute path>
 _forbut_worktree_changes() {
     local rootdir show_untracked
     rootdir=$(git rev-parse --show-toplevel 2>/dev/null) || return 1
@@ -279,7 +279,7 @@ _forbut_worktree_changes() {
     git -c color.status=always status --porcelain -z \
         --untracked-files="${show_untracked:-all}" 2>/dev/null |
         tr '\0' '\n' |
-        awk -v sep="$_FBSEP" -v root="$rootdir" '
+        awk -v sep="$_fbsep" -v root="$rootdir" '
             NF == 0 { next }
             {
                 # Porcelain format: "XY path" where XY is the two-char status
@@ -441,9 +441,9 @@ _forbut_colorize_but_diff() {
 # ---------------------------------------------------------------------------
 # Unassigned-changes list (shared by assign/discard/diff)
 # ---------------------------------------------------------------------------
-# Emits _FBSEP-delimited rows for unassigned worktree changes only.
+# Emits _fbsep-delimited rows for unassigned worktree changes only.
 # JSON-first via `but status -f -j`, falling back to pure-git porcelain.
-# Row shape: <coloured [status] filepath>${_FBSEP}<cli_id-or-path>
+# Row shape: <coloured [status] filepath>${_fbsep}<cli_id-or-path>
 _forbut_unassigned_list() {
     local json
     json=$(_forbut_but status -f -j)
@@ -451,7 +451,7 @@ _forbut_unassigned_list() {
         if ! _forbut_schema_assert "$json" '.unassignedChanges | type == "array"' 'unassigned'; then
             return 1
         fi
-        echo "$json" | jq -r --arg sep "$_FBSEP" '
+        echo "$json" | jq -r --arg sep "$_fbsep" '
             def marker:
                 if   . == "modified" then "\u001b[33m[M]\u001b[0m"
                 elif . == "added"    then "\u001b[32m[A]\u001b[0m"
@@ -464,7 +464,7 @@ _forbut_unassigned_list() {
         return
     fi
 
-    # Non-GitButler fallback: worktree changes (already _FBSEP-delimited).
+    # Non-GitButler fallback: worktree changes (already _fbsep-delimited).
     _forbut_worktree_changes
 }
 

@@ -10,12 +10,12 @@
 #   2. If `but` doesn't support -j on this subcommand, fall back to text parse.
 #   3. If not in a GitButler project, fall back to plain `git branch`.
 #
-# Row shape: <display>${_FBSEP}<branch-name>
+# Row shape: <display>${_fbsep}<branch-name>
 #   display  — what fzf shows (ANSI colours, * markers, status, remote, upstream)
 #   payload  — clean branch name used by `but apply`, never parsed from display.
 
 # ---------------------------------------------------------------------------
-# List branches as _FBSEP-delimited rows
+# List branches as _fbsep-delimited rows
 # ---------------------------------------------------------------------------
 _forbut_switch_list() {
     local json
@@ -34,7 +34,7 @@ _forbut_switch_list() {
         if ! _forbut_schema_assert "$json" '.branches | type == "array"' 'switch.branches'; then
             return 1
         fi
-        echo "$json" | jq -r --arg sep "$_FBSEP" '
+        echo "$json" | jq -r --arg sep "$_fbsep" '
             # Applied stacks: each stack has one or more heads (branches).
             (.appliedStacks // [] | .[] | .heads // [] | .[] |
                 "\u001b[32m●\u001b[0m [applied] \(.name)\($sep)\(.name)"
@@ -59,7 +59,7 @@ _forbut_switch_list() {
             clean=$(echo "$line" | _forbut_strip_ansi)
             name=$(echo "$clean" | awk '{print $3}' | sed 's/^\*//')
             [[ -z "$name" ]] && continue
-            printf '%s%s%s\n' "$line" "$_FBSEP" "$name"
+            printf '%s%s%s\n' "$line" "$_fbsep" "$name"
         done
         return 0
     fi
@@ -69,29 +69,29 @@ _forbut_switch_list() {
         local name=""
         name=$(echo "$line" | _forbut_extract_branch_name)
         [[ -z "$name" ]] && continue
-        printf '%s%s%s\n' "$line" "$_FBSEP" "$name"
+        printf '%s%s%s\n' "$line" "$_fbsep" "$name"
     done
 }
 
-_forbut_cmd_switch() {
+_forbut_switch() {
     local header
     header="${FORBUT_COLOR_BOLD}Switch branch${FORBUT_COLOR_RESET}  "
     header+="${FORBUT_COLOR_DIM}enter${FORBUT_COLOR_RESET}=apply  "
     header+="${FORBUT_COLOR_DIM}ctrl-x${FORBUT_COLOR_RESET}=unapply  "
     header+="${FORBUT_COLOR_DIM}ctrl-/${FORBUT_COLOR_RESET}=toggle preview"
 
-    local preview_cmd="$FORBUT _preview switch_branch {}"
+    local preview_cmd="$FORBUT preview switch_preview {}"
 
     local branch_name
     branch_name=$(
         _forbut_switch_list |
         _forbut_fzf FORBUT_SWITCH_FZF_OPTS \
-            --delimiter="$_FBSEP" \
+            --delimiter="$_fbsep" \
             --with-nth=1 \
             --accept-nth=2 \
             --header="$header" \
             --preview="$preview_cmd" \
-            --bind="ctrl-x:execute-silent(but unapply {} 2>/dev/null)+reload($FORBUT _preview switch_reload)" \
+            --bind="ctrl-x:execute-silent(but unapply {} 2>/dev/null)+reload($FORBUT preview switch_reload)" \
             --bind="enter:accept"
     )
 
@@ -107,7 +107,7 @@ _forbut_cmd_switch() {
 # ---------------------------------------------------------------------------
 # Preview: show branch details
 # ---------------------------------------------------------------------------
-_forbut_preview_switch_branch() {
+_forbut_switch_preview() {
     local branch="$1"
     [[ -z "$branch" ]] && return
 
@@ -119,6 +119,6 @@ _forbut_preview_switch_branch() {
 }
 
 # Reload helper for ctrl-x bind (re-fetch list after unapply)
-_forbut_preview_switch_reload() {
+_forbut_switch_reload() {
     _forbut_switch_list
 }

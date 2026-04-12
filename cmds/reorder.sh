@@ -7,7 +7,7 @@
 #
 # This command is planned for v0.2 and is currently a stub.
 
-_forbut_cmd_reorder() {
+_forbut_reorder() {
     _forbut_warn "forbut::reorder is planned for v0.2 and is not yet implemented."
     _forbut_info "In the meantime, use 'but move' directly to reorder commits."
     _forbut_info "See: but move --help"
