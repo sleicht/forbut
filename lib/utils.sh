@@ -432,6 +432,12 @@ _forbut_but() {
     but "$@" 2>/dev/null | sed -E '/Initiated a background sync/d; /^Last fetch was/d'
 }
 
+# Add ANSI colour to but diff --no-tui box-drawing output.
+# Colours lines containing │+ (additions) green and │- (deletions) red.
+_forbut_colorize_but_diff() {
+    sed -E $'s/(.*\u2502\\+.*)/\x1b[32m\\1\x1b[0m/; s/(.*\u2502-.*)/\x1b[31m\\1\x1b[0m/'
+}
+
 # ---------------------------------------------------------------------------
 # Unassigned-changes list (shared by assign/discard/diff)
 # ---------------------------------------------------------------------------
