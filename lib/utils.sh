@@ -175,6 +175,11 @@ _forbut_preview() {
     "_forbut_preview_${cmd}" "$@"
 }
 
+_forbut_enter() {
+    local cmd="$1"; shift
+    "_forbut_enter_${cmd}" "$@"
+}
+
 # ===========================================================================
 # forgit-aligned helpers (ported from bin/git-forgit)
 # ===========================================================================
