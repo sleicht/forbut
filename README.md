@@ -7,9 +7,11 @@
     <a href="LICENSE">
         <img src="https://img.shields.io/badge/License-MIT-brightgreen.svg"/>
     </a>
-    <a href="https://img.shields.io/badge/Shell-Bash%20%7C%20Zsh-blue">
-        <img src="https://img.shields.io/badge/Shell-Bash%20%7C%20Zsh-blue"/>
+    <a href="https://img.shields.io/badge/Shell-Bash%20%7C%20Zsh%20%7C%20Fish-blue">
+        <img src="https://img.shields.io/badge/Shell-Bash%20%7C%20Zsh%20%7C%20Fish-blue"/>
     </a>
+    <a href="https://github.com/pre-commit/pre-commit">
+        <img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white" alt="pre-commit" />
 </p>
 
 This tool is designed to help you use [GitButler](https://gitbutler.com) more efficiently from the terminal.
