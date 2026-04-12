@@ -1,0 +1,57 @@
+#compdef git-forbut -p forbut::*
+#description Fuzzy UX for GitButler's but CLI
+#
+# forbut completions for zsh
+#
+# Place this file in your $fpath (e.g. /usr/share/zsh/site-functions) to enable
+# tab completions for forbut.
+
+_git-forbut() {
+    local subcommand cmd
+    subcommand="${words[1]}"
+    if [[ "$subcommand" != "forbut"* ]]; then
+        # Forbut is called via a git alias. Get the original aliased subcommand
+        # and proceed as if it was the previous word.
+        cmd=$(git config --get "alias.$subcommand" | cut -d ' ' -f 2)
+    else
+        # The last word is the relevant command
+        cmd=${words[(( ${#words} - 1 ))]}
+    fi
+
+    case ${cmd} in
+    forbut)
+        local -a subcommands
+        subcommands=(
+            'assign:fuzzy-assign uncommitted hunks to a stack'
+            'diff:browse changed files with diff preview'
+            'discard:fuzzy-discard hunks or files'
+            'log:browse commit log across current stack'
+            'reorder:interactively reorder commits within a stack'
+            'switch:fuzzy-switch between virtual branches'
+        )
+        _describe -t commands 'git forbut' subcommands
+        ;;
+    assign)  ;;
+    diff)    _git-diff ;;
+    discard) ;;
+    log)     ;;
+    reorder) ;;
+    switch)  ;;
+    esac
+}
+
+# We're reusing existing completion functions, so load those first
+# if not already loaded and check if completion function exists afterwards.
+(( $+functions[_git-diff] )) || _git
+(( $+functions[_git-diff] )) || return 1
+
+# Completions for forbut plugin shell functions (also works for aliases)
+# Only diff takes a meaningful argument (optional diff target).
+compdef _git-diff forbut::diff
+
+# this is the case of calling the command and pressing tab
+# the very first time of a shell session, we have to manually
+# call the dispatch function
+if [[ $funcstack[1] == "_git-forbut" ]]; then
+  _git-forbut "$@"
+fi
