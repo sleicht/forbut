@@ -429,7 +429,7 @@ _forbut_schema_drift_log() {
 # to STDOUT (not stderr). Those lines pollute captured diffs and break jq
 # when mixed with JSON. This wrapper filters them before output reaches callers.
 _forbut_but() {
-    but "$@" 2>/dev/null | sed -E '/^Initiated a background sync/d'
+    but "$@" 2>/dev/null | sed -E '/Initiated a background sync/d; /^Last fetch was/d'
 }
 
 # ---------------------------------------------------------------------------
