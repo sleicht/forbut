@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/forbut — standalone CLI entry point for forbut
+# bin/git-forbut — standalone CLI entry point for forbut
 # Can be used directly:  forbut switch
 # Or via git:            git forbut switch  (if on PATH)
 #
@@ -16,7 +16,7 @@
 # ---------------------------------------------------------------------------
 # Follow symlinks to find the real location of this script, then go up one
 # level to get the install dir. This is needed because install.sh symlinks
-# ~/.local/bin/forbut -> ~/.local/share/forbut/bin/forbut.
+# ~/.local/bin/git-forbut -> ~/.local/share/forbut/bin/git-forbut.
 _forbut_resolve_script() {
     local src="${BASH_SOURCE[0]}"
     while [[ -L "$src" ]]; do
@@ -67,7 +67,7 @@ ${FORBUT_COLOR_BOLD}PLANNED COMMANDS (v0.2+)${FORBUT_COLOR_RESET}
     reorder     Interactively reorder commits within a stack
 
 ${FORBUT_COLOR_BOLD}INTERNAL COMMANDS${FORBUT_COLOR_RESET}
-    _preview    Preview dispatcher (used by fzf callbacks)
+    preview     Preview dispatcher (used by fzf callbacks)
 
 ${FORBUT_COLOR_BOLD}OPTIONS${FORBUT_COLOR_RESET}
     -h, --help      Show this help
@@ -106,8 +106,8 @@ declare -a FORBUT_PUBLIC_COMMANDS=(
 
 # Private commands (used by fzf callbacks, not user-facing)
 declare -a FORBUT_PRIVATE_COMMANDS=(
-    _preview
-    _enter
+    preview
+    enter
 )
 
 # ---------------------------------------------------------------------------
@@ -125,12 +125,12 @@ _forbut_main() {
             echo "forbut $FORBUT_VERSION"
             return 0
             ;;
-        _preview)
+        preview)
             shift
             _forbut_preview "$@"
             return $?
             ;;
-        _enter)
+        enter)
             shift
             _forbut_enter "$@"
             return $?
@@ -159,7 +159,7 @@ _forbut_main() {
 
     # Dispatch to the command function
     shift
-    "_forbut_cmd_${cmd}" "$@"
+    "_forbut_${cmd}" "$@"
 }
 
 # ---------------------------------------------------------------------------

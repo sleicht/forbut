@@ -17,7 +17,7 @@
 # Maps to: but stage <hunk_ids> <branch>
 # Forgit equivalent: forgit::add (but more powerful with virtual branches)
 
-_forbut_cmd_assign() {
+_forbut_assign() {
     local header
     header="${FORBUT_COLOR_BOLD}Assign hunks to branch${FORBUT_COLOR_RESET}  "
     header+="${FORBUT_COLOR_DIM}tab${FORBUT_COLOR_RESET}=select  "
@@ -25,7 +25,7 @@ _forbut_cmd_assign() {
     header+="${FORBUT_COLOR_DIM}ctrl-a${FORBUT_COLOR_RESET}=select all  "
     header+="${FORBUT_COLOR_DIM}ctrl-/${FORBUT_COLOR_RESET}=toggle preview"
 
-    local preview_cmd="$FORBUT _preview assign_hunk {}"
+    local preview_cmd="$FORBUT preview assign_preview {}"
 
     # Step 1: Fuzzy-pick unassigned hunks. fzf returns one payload per line
     # (the CLI IDs), already clean.
@@ -33,7 +33,7 @@ _forbut_cmd_assign() {
     selected_ids=$(
         _forbut_unassigned_list |
         _forbut_fzf FORBUT_ASSIGN_FZF_OPTS \
-            --delimiter="$_FBSEP" \
+            --delimiter="$_fbsep" \
             --with-nth=1 \
             --accept-nth=2 \
             --header="$header" \
@@ -66,11 +66,11 @@ _forbut_cmd_assign() {
     target_branch=$(
         _forbut_switch_list |
         _forbut_fzf FORBUT_ASSIGN_BRANCH_FZF_OPTS \
-            --delimiter="$_FBSEP" \
+            --delimiter="$_fbsep" \
             --with-nth=1 \
             --accept-nth=2 \
             --header="$branch_header" \
-            --preview="$FORBUT _preview switch_branch {}" \
+            --preview="$FORBUT preview switch_preview {}" \
             --no-multi
     )
 
@@ -96,10 +96,10 @@ _forbut_cmd_assign() {
 # ---------------------------------------------------------------------------
 # Preview: show the diff for a single hunk payload (CLI ID)
 # ---------------------------------------------------------------------------
-_forbut_preview_assign_hunk() {
+_forbut_assign_preview() {
     local hunk_ref
-    if [[ "$1" == *"$_FBSEP"* ]]; then
-        hunk_ref="${1#*"$_FBSEP"}"
+    if [[ "$1" == *"$_fbsep"* ]]; then
+        hunk_ref="${1#*"$_fbsep"}"
     else
         hunk_ref="$1"
     fi

@@ -77,7 +77,7 @@ git clone https://github.com/user/forbut.git ~/src/forbut
 
 ### Git Integration
 
-You can use forbut as a sub-command of git by making `bin/forbut` available in `$PATH`:
+You can use forbut as a sub-command of git by making `bin/git-forbut` available in `$PATH`:
 
 ```sh
 PATH="$PATH:$FORBUT_INSTALL_DIR/bin"
@@ -242,24 +242,24 @@ forbut/
 
 forbut follows forgit's two-layer architecture:
 
-- **`forbut.sh`** — thin shell plugin that registers functions (`forbut::switch`, etc.) and aliases (`fbs`, etc.), then delegates to `bin/forbut`.
-- **`bin/forbut`** — standalone Bash script containing all logic. Sources `lib/utils.sh` and every `cmds/*.sh` file, then dispatches to the requested command.
+- **`forbut.sh`** — thin shell plugin that registers functions (`forbut::switch`, etc.) and aliases (`fbs`, etc.), then delegates to `bin/git-forbut`.
+- **`bin/git-forbut`** — standalone Bash script containing all logic. Sources `lib/utils.sh` and every `cmds/*.sh` file, then dispatches to the requested command.
 
-### The `_FBSEP` display/payload contract
+### The `_fbsep` display/payload contract
 
 Every fuzzy picker emits rows shaped as:
 
 ```
-<ansi-coloured display>${_FBSEP}<machine payload>
+<ansi-coloured display>${_fbsep}<machine payload>
 ```
 
-where `_FBSEP=$'\x1f\x1e'` (ASCII Unit Separator + Record Separator). fzf is
-invoked with `--delimiter=$_FBSEP --with-nth=1 --accept-nth=2`, so it **shows**
+where `_fbsep=$'\x1f\x1e'` (ASCII Unit Separator + Record Separator). fzf is
+invoked with `--delimiter=$_fbsep --with-nth=1 --accept-nth=2`, so it **shows**
 field 1 but **returns** field 2 verbatim — no `awk '{print $N}'` on selection
 output, no column drift, no marker/ANSI parsing bugs.
 
 fzf previews use a **self-invocation** pattern: the `--preview` command calls
-`forbut _preview <func> {}`, which re-enters the script with all helpers
+`forbut preview <func> {}`, which re-enters the script with all helpers
 available.
 
 🧪 Running Tests
@@ -279,7 +279,7 @@ The suite is split into three layers:
 
 | Suite                    | What it covers                                                 |
 |--------------------------|----------------------------------------------------------------|
-| `tests/utils.bats`       | `lib/utils.sh` primitives (pagers, `_FBSEP`, schema assert, …) |
+| `tests/utils.bats`       | `lib/utils.sh` primitives (pagers, `_fbsep`, schema assert, …) |
 | `tests/commands.bats`    | Fixture-based command tests with a mock `but` shim on `$PATH`  |
 | `tests/integration.bats` | End-to-end tests against a real `but setup` in a temp repo     |
 

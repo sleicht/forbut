@@ -34,7 +34,7 @@ ${BOLD}OPTIONS${RESET}
 
 ${BOLD}WHAT IT DOES${RESET}
     1. Copies forbut files to PREFIX/share/forbut/
-    2. Symlinks bin/forbut to PREFIX/bin/forbut
+    2. Symlinks bin/git-forbut to PREFIX/bin/git-forbut
     3. Prints shell integration instructions
 
 ${BOLD}SHELL INTEGRATION${RESET}
@@ -69,7 +69,7 @@ SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ---------------------------------------------------------------------------
 if [[ $UNINSTALL -eq 1 ]]; then
     info "Uninstalling forbut from $FORBUT_INSTALL_PREFIX ..."
-    rm -f "$BIN_DIR/forbut"
+    rm -f "$BIN_DIR/git-forbut"
     rm -rf "$INSTALL_DIR"
     ok "Uninstalled. Remember to remove the 'source ...' line from your shell config."
     exit 0
@@ -104,13 +104,13 @@ else
     cp -f "$SOURCE_DIR/forbut.sh" "$INSTALL_DIR/"
     cp -f "$SOURCE_DIR/lib/"*.sh "$INSTALL_DIR/lib/"
     cp -f "$SOURCE_DIR/cmds/"*.sh "$INSTALL_DIR/cmds/"
-    cp -f "$SOURCE_DIR/bin/forbut" "$INSTALL_DIR/bin/"
+    cp -f "$SOURCE_DIR/bin/git-forbut" "$INSTALL_DIR/bin/"
 fi
 
-chmod +x "$INSTALL_DIR/bin/forbut"
+chmod +x "$INSTALL_DIR/bin/git-forbut"
 
 # Create symlink in bin directory
-ln -sf "$INSTALL_DIR/bin/forbut" "$BIN_DIR/forbut"
+ln -sf "$INSTALL_DIR/bin/git-forbut" "$BIN_DIR/git-forbut"
 
 ok "Installed successfully."
 echo ""

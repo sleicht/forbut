@@ -9,7 +9,7 @@
 # Maps to: but hunk discard <target>  /  git checkout -- <file>
 # Forgit equivalent: forgit::clean + forgit::checkout::file
 
-_forbut_cmd_discard() {
+_forbut_discard() {
     local header
     header="${FORBUT_COLOR_BOLD}Discard changes${FORBUT_COLOR_RESET}  "
     header+="${FORBUT_COLOR_RED}WARNING: this is destructive!${FORBUT_COLOR_RESET}  "
@@ -17,13 +17,13 @@ _forbut_cmd_discard() {
     header+="${FORBUT_COLOR_DIM}enter${FORBUT_COLOR_RESET}=discard selected  "
     header+="${FORBUT_COLOR_DIM}ctrl-/${FORBUT_COLOR_RESET}=toggle preview"
 
-    local preview_cmd="$FORBUT _preview discard_item {}"
+    local preview_cmd="$FORBUT preview discard_preview {}"
 
     local selected_ids
     selected_ids=$(
         _forbut_unassigned_list |
         _forbut_fzf FORBUT_DISCARD_FZF_OPTS \
-            --delimiter="$_FBSEP" \
+            --delimiter="$_fbsep" \
             --with-nth=1 \
             --accept-nth=2 \
             --header="$header" \
@@ -88,10 +88,10 @@ _forbut_cmd_discard() {
 # ---------------------------------------------------------------------------
 # Preview: show what would be discarded (CLI ID or file path)
 # ---------------------------------------------------------------------------
-_forbut_preview_discard_item() {
+_forbut_discard_preview() {
     local item_ref
-    if [[ "$1" == *"$_FBSEP"* ]]; then
-        item_ref="${1#*"$_FBSEP"}"
+    if [[ "$1" == *"$_fbsep"* ]]; then
+        item_ref="${1#*"$_fbsep"}"
     else
         item_ref="$1"
     fi

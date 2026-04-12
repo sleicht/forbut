@@ -28,7 +28,7 @@ else
 fi
 
 export FORBUT_INSTALL_DIR
-FORBUT="$FORBUT_INSTALL_DIR/bin/forbut"
+FORBUT="$FORBUT_INSTALL_DIR/bin/git-forbut"
 
 # ---------------------------------------------------------------------------
 # Source shared utilities
@@ -55,7 +55,7 @@ fi
 # ---------------------------------------------------------------------------
 # Shell function registration
 # ---------------------------------------------------------------------------
-# Each function delegates to bin/forbut so all logic lives in one place.
+# Each function delegates to bin/git-forbut so all logic lives in one place.
 # The only reason these exist is to provide nice shell-level names and
 # to handle any operations that must run in the parent shell (e.g., cd).
 
