@@ -158,22 +158,31 @@ _forbut_preview_diff_file() {
     local preview_pager
     preview_pager=$(_forbut_get_pager diff)
 
-    # Use but diff -j to resolve the file path, then render with git diff for colour.
-    # but diff --no-tui outputs uncoloured box-drawing chars; git diff produces ANSI.
-    # Note: but diff -j embeds literal newlines inside JSON strings (invalid per spec),
-    # so jq rejects it. Use grep/sed to extract the path from the first "path": line.
-    local filepath
+    # Resolve file path via but diff -j for coloured git diff.
+    # Note: but diff -j embeds literal newlines in JSON strings (jq rejects it),
+    # so use grep/sed to extract the path from the first "path": line.
+    local filepath output
     filepath=$(_forbut_but diff "$ref" -j | grep -m1 '"path":' | sed 's/.*"path":[[:space:]]*"\([^"]*\)".*/\1/')
 
+    # 1. Coloured git diff — best for worktree (unassigned) changes.
     if [[ -n "$filepath" ]]; then
-        git diff --color=always -- "$filepath" 2>/dev/null | eval "$preview_pager" && return
-        git diff --cached --color=always -- "$filepath" 2>/dev/null | eval "$preview_pager"
+        output=$(git diff --color=always -- "$filepath" 2>/dev/null)
+        [[ -z "$output" ]] && output=$(git diff --cached --color=always -- "$filepath" 2>/dev/null)
+        if [[ -n "$output" ]]; then
+            echo "$output" | eval "$preview_pager"
+            return
+        fi
+    fi
+
+    # 2. but diff --no-tui — works for committed changes (uncoloured but functional).
+    output=$(_forbut_but diff --no-tui "$ref")
+    if [[ -n "$output" ]]; then
+        echo "$output" | eval "$preview_pager"
         return
     fi
 
-    # Fallback for non-GitButler repos: ref is a plain file path.
+    # 3. Last resort: plain git diff with ref as path (non-GitButler repos).
     git diff --color=always -- "$ref" 2>/dev/null | eval "$preview_pager"
-    git diff --cached --color=always -- "$ref" 2>/dev/null | eval "$preview_pager"
 }
 
 # ---------------------------------------------------------------------------
