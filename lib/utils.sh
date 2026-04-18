@@ -11,7 +11,8 @@
 # Version / fzf requirement (≈ forgit's REQUIRED_FZF_VERSION)
 # ---------------------------------------------------------------------------
 FORBUT_VERSION="0.1.0"
-REQUIRED_FZF_VERSION="0.42.0"
+REQUIRED_FZF_VERSION="0.60.0"
+REQUIRED_JQ_VERSION="1.8.0"
 
 # ---------------------------------------------------------------------------
 # Internal display/payload separator (≈ forgit's _ffsep)
@@ -205,56 +206,56 @@ _forbut_worktree_changes() {
 _forbut_get_pager() {
     local key="${1:-core}"
     case "$key" in
-        core)
-            if [[ -n ${FORBUT_PAGER:-} ]]; then
-                echo "$FORBUT_PAGER"
-            elif _forbut_has_delta; then
-                echo "delta"
-            else
-                local gp
-                gp=$(git config core.pager 2>/dev/null)
-                echo "${gp:-cat}"
-            fi
-            ;;
-        diff)
-            local dp
-            dp=$(git config pager.diff 2>/dev/null)
-            if [[ -n ${FORBUT_DIFF_PAGER:-} ]]; then
-                echo "$FORBUT_DIFF_PAGER"
-            elif [[ -n $dp ]]; then
-                echo "$dp"
-            else
-                _forbut_get_pager core
-            fi
-            ;;
-        show)
-            local sp
-            sp=$(git config pager.show 2>/dev/null)
-            if [[ -n ${FORBUT_SHOW_PAGER:-} ]]; then
-                echo "$FORBUT_SHOW_PAGER"
-            elif [[ -n $sp ]]; then
-                echo "$sp"
-            else
-                _forbut_get_pager core
-            fi
-            ;;
-        blame)
-            local bp
-            bp=$(git config pager.blame 2>/dev/null)
-            if [[ -n ${FORBUT_BLAME_PAGER:-} ]]; then
-                echo "$FORBUT_BLAME_PAGER"
-            elif [[ -n $bp ]]; then
-                echo "$bp"
-            else
-                _forbut_get_pager core
-            fi
-            ;;
-        enter)
-            echo "${FORBUT_ENTER_PAGER:-LESS='-r' less}"
-            ;;
-        *)
-            echo "cat"
-            ;;
+    core)
+        if [[ -n ${FORBUT_PAGER:-} ]]; then
+            echo "$FORBUT_PAGER"
+        elif _forbut_has_delta; then
+            echo "delta"
+        else
+            local gp
+            gp=$(git config core.pager 2>/dev/null)
+            echo "${gp:-cat}"
+        fi
+        ;;
+    diff)
+        local dp
+        dp=$(git config pager.diff 2>/dev/null)
+        if [[ -n ${FORBUT_DIFF_PAGER:-} ]]; then
+            echo "$FORBUT_DIFF_PAGER"
+        elif [[ -n $dp ]]; then
+            echo "$dp"
+        else
+            _forbut_get_pager core
+        fi
+        ;;
+    show)
+        local sp
+        sp=$(git config pager.show 2>/dev/null)
+        if [[ -n ${FORBUT_SHOW_PAGER:-} ]]; then
+            echo "$FORBUT_SHOW_PAGER"
+        elif [[ -n $sp ]]; then
+            echo "$sp"
+        else
+            _forbut_get_pager core
+        fi
+        ;;
+    blame)
+        local bp
+        bp=$(git config pager.blame 2>/dev/null)
+        if [[ -n ${FORBUT_BLAME_PAGER:-} ]]; then
+            echo "$FORBUT_BLAME_PAGER"
+        elif [[ -n $bp ]]; then
+            echo "$bp"
+        else
+            _forbut_get_pager core
+        fi
+        ;;
+    enter)
+        echo "${FORBUT_ENTER_PAGER:-LESS='-r' less}"
+        ;;
+    *)
+        echo "cat"
+        ;;
     esac
 }
 
@@ -315,29 +316,49 @@ _forbut_require_but() {
 }
 
 _forbut_require_fzf() {
+    local installed_fzf_version
+    local higher_fzf_version
+
     if ! _forbut_check_cmd fzf; then
         _forbut_die "'fzf' is not installed or not on PATH." \
             "Install it from https://github.com/junegunn/fzf"
         return 1
     fi
-    local installed_fzf_version
+
+    # Check fzf version
     installed_fzf_version=$(fzf --version 2>/dev/null | awk '{print $1}')
     if [[ -z $installed_fzf_version ]]; then
         _forbut_die "Could not determine fzf version."
         return 1
     fi
-    local higher
-    higher=$(printf '%s\n' "$REQUIRED_FZF_VERSION" "$installed_fzf_version" | sort -V | tail -n1)
-    if [[ $higher != "$installed_fzf_version" ]]; then
-        _forbut_die "fzf version $REQUIRED_FZF_VERSION or higher is required (found $installed_fzf_version)."
+
+    higher_fzf_version=$(printf '%s\n' "$REQUIRED_FZF_VERSION" "$installed_fzf_version" | sort -V | tail -n1)
+    if [[ $higher_fzf_version != "$installed_fzf_version" ]]; then
+        _forbut_die "fzf version $REQUIRED_FZF_VERSION or higher is required. You have $installed_fzf_version."
         return 1
     fi
 }
 
 _forbut_require_jq() {
+    local installed_jq_version
+    local higher_jq_version
+
     if ! _forbut_check_cmd jq; then
         _forbut_die "'jq' is required by forbut (JSON is the primary contract with 'but')." \
             "Install with: brew install jq  /  apt install jq  /  pacman -S jq"
+        return 1
+    fi
+
+    # Check jq version
+    installed_jq_version=$(jq --version 2>/dev/null | awk '{print $1}')
+    if [[ -z $installed_jq_version ]]; then
+        _forbut_die "Could not determine jq version."
+        return 1
+    fi
+
+    higher_jq_version=$(printf '%s\n' "$REQUIRED_JQ_VERSION" "$installed_jq_version" | sort -V | tail -n1)
+    if [[ $higher_jq_version != "$installed_jq_version" ]]; then
+        _forbut_die "jq version $REQUIRED_JQ_VERSION or higher is required. You have $installed_jq_version."
         return 1
     fi
 }

@@ -18,33 +18,45 @@
 # level to get the install dir. This is needed because install.sh symlinks
 # ~/.local/bin/git-forbut -> ~/.local/share/forbut/bin/git-forbut.
 _forbut_resolve_script() {
-    local src="${BASH_SOURCE[0]}"
+    local src
+    if [[ -n ${BASH_SOURCE[0]:-} ]]; then
+        src="${BASH_SOURCE[0]}"
+    elif [[ -n ${ZSH_VERSION:-} ]]; then
+        # shellcheck disable=SC2296
+        src="${(%):-%x}"
+    else
+        src="$0"
+    fi
+    # Resolve symlinks one hop at a time so we land on the real file.
     while [[ -L $src ]]; do
         local dir
-        dir="$(cd "$(dirname "$src")" && pwd)"
-        src="$(readlink "$src")"
-        # If readlink returned a relative path, resolve it from the dir
+        dir="$(cd -- "$(dirname -- "$src")" &>/dev/null && pwd)"
+        src="$(readlink -- "$src")"
         [[ $src != /* ]] && src="$dir/$src"
     done
     echo "$src"
 }
-FORBUT_REAL_PATH="$(_forbut_resolve_script)"
-FORBUT_INSTALL_DIR="$(cd "$(dirname "$FORBUT_REAL_PATH")/.." && pwd)"
-export FORBUT_INSTALL_DIR
-FORBUT="$FORBUT_REAL_PATH"
+
+_FORBUT_SELF="$(_forbut_resolve_script)"
+_FORBUT_BIN_DIR="$(cd -- "$(dirname -- "$_FORBUT_SELF")" &>/dev/null && pwd)"
+_FORBUT_ROOT_DIR="$(cd -- "$_FORBUT_BIN_DIR/.." &>/dev/null && pwd)"
+
+# FORBUT is the absolute path to this script. It is referenced inside fzf
+# keybindings to re-enter the dispatcher for preview / enter / yank actions.
+# Exported so the fzf subshells (--preview / --bind execute) inherit it.
+export FORBUT="$_FORBUT_SELF"
 
 # ---------------------------------------------------------------------------
-# Source shared utilities
+# Load shared helpers and every command implementation
 # ---------------------------------------------------------------------------
-# shellcheck source=../lib/utils.sh
-source "$FORBUT_INSTALL_DIR/lib/utils.sh"
+# shellcheck source=../lib/utils.sh disable=SC1091
+. "$_FORBUT_ROOT_DIR/lib/utils.sh"
 
-# ---------------------------------------------------------------------------
-# Source command implementations
-# ---------------------------------------------------------------------------
-for cmd_file in "$FORBUT_INSTALL_DIR"/cmds/*.sh; do
-    [[ -f $cmd_file ]] && source "$cmd_file"
+for _forbut_cmd_file in "$_FORBUT_ROOT_DIR"/cmds/*.sh; do
+    # shellcheck source=/dev/null
+    [[ -f $_forbut_cmd_file ]] && . "$_forbut_cmd_file"
 done
+unset _forbut_cmd_file
 
 # ---------------------------------------------------------------------------
 # Usage / help
@@ -96,25 +108,25 @@ EOF
 # Command registries (≈ forgit's PUBLIC_COMMANDS / PRIVATE_COMMANDS)
 # Alphabetised so this block diffs cleanly against bin/git-forgit.
 # ---------------------------------------------------------------------------
-declare -a FORBUT_PUBLIC_COMMANDS=(
-    assign
-    diff
-    discard
-    log
-    reorder
-    switch
+PUBLIC_COMMANDS=(
+    "assign"
+    "diff"
+    "discard"
+    "log"
+    "reorder"
+    "switch"
 )
 
 # Private commands (used by fzf callbacks, not user-facing)
-declare -a FORBUT_PRIVATE_COMMANDS=(
-    enter
-    preview
+PRIVATE_COMMANDS=(
+    "enter"
+    "preview"
 )
 
 # ---------------------------------------------------------------------------
 # Command dispatch
 # ---------------------------------------------------------------------------
-_forbut_main() {
+main() {
     local cmd="${1:-}"
 
     case "$cmd" in
@@ -138,18 +150,17 @@ _forbut_main() {
             ;;
     esac
 
-    # Check if it's a known public command
-    local found=0
-    for c in "${FORBUT_PUBLIC_COMMANDS[@]}"; do
-        if [[ $c == "$cmd" ]]; then
-            found=1
-            break
-        fi
-    done
+    # Set shell for fzf preview commands
+    SHELL="$(which bash)"
+    export SHELL
 
-    if [[ $found -eq 0 ]]; then
-        _forbut_error "Unknown command: $cmd"
-        echo "" >&2
+    # shellcheck disable=SC2076
+    if [[ ! " ${PUBLIC_COMMANDS[*]} " =~ " ${cmd} " ]] && [[ ! " ${PRIVATE_COMMANDS[*]} " =~ " ${cmd} " ]]; then
+        if [[ -z $cmd ]]; then
+            _forbut_error "forgit: missing command\n\n"
+        else
+            _forbut_error "forgit: '%s' is not a valid forgit command.\n\n" "$cmd"
+        fi
         _forbut_usage >&2
         return 1
     fi
@@ -160,12 +171,13 @@ _forbut_main() {
 
     # Dispatch to the command function
     shift
-    "_forbut_${cmd}" "$@"
+    _forbut_"${cmd}" "$@"
 }
 
-# ---------------------------------------------------------------------------
-# Entry guard: only run main() when executed directly (not sourced)
-# ---------------------------------------------------------------------------
-if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
-    _forbut_main "$@"
+# Check if the script is being sourced. This is necessary for unit tests where
+# we do not want to execute the main function.
+if [[ ${BASH_SOURCE[0]} != "$0" ]]; then
+    return 0
 fi
+
+main "${@}"
