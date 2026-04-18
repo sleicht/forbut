@@ -75,15 +75,15 @@ fi
 # Logging (≈ forgit's _forgit_warn / _forgit_info / _forgit_print_dim)
 # ---------------------------------------------------------------------------
 _forbut_info() {
-    printf '%s[forbut]%s %s\n' "$FORBUT_COLOR_CYAN" "$FORBUT_COLOR_RESET" "$*" >&2
+    printf '%s[Info]%s %s\n' "$FORBUT_COLOR_CYAN" "$FORBUT_COLOR_RESET" "$*" >&2
 }
 
 _forbut_warn() {
-    printf '%s[forbut]%s %s\n' "$FORBUT_COLOR_YELLOW" "$FORBUT_COLOR_RESET" "$*" >&2
+    printf '%s[Warn]%s %s\n' "$FORBUT_COLOR_YELLOW" "$FORBUT_COLOR_RESET" "$*" >&2
 }
 
 _forbut_error() {
-    printf '%s[forbut]%s %s\n' "$FORBUT_COLOR_RED" "$FORBUT_COLOR_RESET" "$*" >&2
+    printf '%s[Error]%s %s\n' "$FORBUT_COLOR_RED" "$FORBUT_COLOR_RESET" "$*" >&2
 }
 
 _forbut_die() {
@@ -114,6 +114,15 @@ _forbut_strip_ansi() {
     sed "s/${ESC}\[[0-9;]*m//g"
 }
 
+# optional render emoji characters (https://github.com/wfxr/emoji-cli)
+_forbut_emojify() {
+    if hash emojify &>/dev/null; then
+        emojify
+    else
+        cat
+    fi
+}
+
 # ---------------------------------------------------------------------------
 # SHA helpers (≈ forgit's _forgit_extract_sha / _forgit_yank_sha)
 # ---------------------------------------------------------------------------
@@ -136,6 +145,36 @@ _forbut_parse_array() {
     IFS=" " read -r -a "$1" <<<"$2"
     ${old_IFS+"false"} && unset IFS || IFS="$old_IFS"
 }
+
+# parse the input arguments and print only those after the "--"
+# separator as a single line of quoted arguments to stdout
+_forbut_quote_files() {
+    local files add
+    files=()
+    add=false
+    while (("$#")); do
+        case "$1" in
+            --)
+                add=true
+                shift
+                ;;
+            *)
+                if [ $add == true ]; then
+                    files+=("'$1'")
+                fi
+                shift
+                ;;
+        esac
+    done
+    echo "${files[*]}"
+}
+
+# Git log format — ported from forgit's default.
+# %x1f%x1e encodes the _fbsep separator (US + RS) as native git format escapes.
+
+_forbut_log_graph_enable=${FORBUT_LOG_GRAPH_ENABLE:-"true"}
+_forbut_log_format=${FORBUT_LOG_FORMAT:-"%C(auto)%h%d %s %C(black)%C(bold)%cr%Creset%x1f%x1e%h"}
+_forbut_log_preview_options=("--graph" "--pretty=format:$_forbut_log_format" "--color=always" "--abbrev-commit" "--date=relative")
 
 # ---------------------------------------------------------------------------
 # Branch helpers (≈ forgit's _forgit_extract_branch_name + _forgit_branch_list)
@@ -407,10 +446,10 @@ _forbut_fzf() {
         _cmd_opts="${!_cmd_opts_var:-}"
     fi
     FZF_DEFAULT_OPTS="$FORBUT_FZF_DEFAULT_OPTS $_cmd_opts" fzf "$@"
-    local exit_code=$?
+    local fzf_exit_code=$?
     # Treat ctrl-c / esc (130) as graceful exit
-    [[ $exit_code -eq 130 ]] && return 0
-    return $exit_code
+    [[ $fzf_exit_code -eq 130 ]] && return 0
+    return $fzf_exit_code
 }
 
 # ---------------------------------------------------------------------------

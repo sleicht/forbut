@@ -168,10 +168,13 @@ Complete loading order of fzf options is:
 
 ### Other Options
 
-| Option                      | Description                                | Default |
-|-----------------------------|--------------------------------------------|---------|
-| `FORBUT_DISCARD_NO_CONFIRM` | Skip the "are you sure?" prompt on discard | unset   |
-| `FORBUT_NO_ALIASES`         | Disable all shell aliases                  | unset   |
+| Option                      | Description                                | Default                                       |
+|-----------------------------|--------------------------------------------|-----------------------------------------------|
+| `FORBUT_LOG_FORMAT`         | git log format                             | `%C(auto)%h%d %s %C(black)%C(bold)%cr%Creset` |
+| `FORBUT_GLO_FORMAT`         | override log format for `glo` command      | `$FORGIT_LOG_FORMAT`                          |
+| `FORBUT_LOG_GRAPH_ENABLE`   | enable log graph display                   | `true`                                        |
+| `FORBUT_DISCARD_NO_CONFIRM` | Skip the "are you sure?" prompt on discard | unset                                         |
+| `FORBUT_NO_ALIASES`         | Disable all shell aliases                  | unset                                         |
 
 ### Schema Drift Log
 
