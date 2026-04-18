@@ -3,7 +3,7 @@
 # Fuzzy-switch between virtual branches/stacks.
 #
 # Maps to: but apply <branch> / but unapply <branch>
-# Forgit equivalent: forgit::checkout_branch
+# Forgit equivalent: forgit::switch_branch (in forgit/cmds/checkout.sh)
 #
 # Data contract (JSON-first):
 #   1. Try `but branch list --all -j` → jq emits delimited rows.
@@ -13,11 +13,39 @@
 # Row shape: <display>${_fbsep}<branch-name>
 #   display  — what fzf shows (ANSI colours, * markers, status, remote, upstream)
 #   payload  — clean branch name used by `but apply`, never parsed from display.
+#
+# Function ordering mirrors forgit/cmds/checkout.sh::switch_branch group:
+#   _forbut_branch_preview  →  preview helper (≈ _forgit_branch_preview)
+#   _forbut_switch_reload   →  reload helper for ctrl-x bind (forbut-specific)
+#   _forbut_branch_list     →  branch lister (≈ _forgit_branch_list + git switch wrapper)
+#   _forbut_switch          →  main entry    (≈ _forgit_switch_branch) — LAST
+
+# ---------------------------------------------------------------------------
+# Preview: show branch details
+# ---------------------------------------------------------------------------
+_forbut_branch_preview() {
+    local branch="$1"
+    [[ -z $branch ]] && return
+
+    but branch show "$branch" -f 2>/dev/null || {
+        # Non-GitButler fallback: show git log for the branch
+        git log --color=always --oneline -20 "$branch" -- 2>/dev/null ||
+            echo "No details available for '$branch'"
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Reload helper for ctrl-x bind (re-fetch list after unapply)
+# ---------------------------------------------------------------------------
+_forbut_switch_reload() {
+    _forbut_branch_list
+}
 
 # ---------------------------------------------------------------------------
 # List branches as _fbsep-delimited rows
+# (≈ _forgit_branch_list, but emits the display/payload pair forbut needs)
 # ---------------------------------------------------------------------------
-_forbut_switch_list() {
+_forbut_branch_list() {
     local json
     json=$(but branch list --all -j 2>/dev/null)
 
@@ -73,6 +101,9 @@ _forbut_switch_list() {
     done
 }
 
+# ---------------------------------------------------------------------------
+# git switch-branch selector (main entry — comes LAST, mirroring forgit)
+# ---------------------------------------------------------------------------
 _forbut_switch() {
     local header
     header="${FORBUT_COLOR_BOLD}Switch branch${FORBUT_COLOR_RESET}  "
@@ -80,11 +111,11 @@ _forbut_switch() {
     header+="${FORBUT_COLOR_DIM}ctrl-x${FORBUT_COLOR_RESET}=unapply  "
     header+="${FORBUT_COLOR_DIM}ctrl-/${FORBUT_COLOR_RESET}=toggle preview"
 
-    local preview_cmd="$FORBUT preview switch_preview {}"
+    local preview_cmd="$FORBUT preview branch_preview {}"
 
     local branch_name
     branch_name=$(
-        _forbut_switch_list |
+        _forbut_branch_list |
             _forbut_fzf FORBUT_SWITCH_FZF_OPTS \
                 --delimiter="$_fbsep" \
                 --with-nth=1 \
@@ -102,23 +133,4 @@ _forbut_switch() {
 
     _forbut_info "Applying branch: $branch_name"
     but apply "$branch_name"
-}
-
-# ---------------------------------------------------------------------------
-# Preview: show branch details
-# ---------------------------------------------------------------------------
-_forbut_switch_preview() {
-    local branch="$1"
-    [[ -z $branch ]] && return
-
-    but branch show "$branch" -f 2>/dev/null || {
-        # Non-GitButler fallback: show git log for the branch
-        git log --color=always --oneline -20 "$branch" -- 2>/dev/null ||
-            echo "No details available for '$branch'"
-    }
-}
-
-# Reload helper for ctrl-x bind (re-fetch list after unapply)
-_forbut_switch_reload() {
-    _forbut_switch_list
 }

@@ -93,21 +93,22 @@ EOF
 }
 
 # ---------------------------------------------------------------------------
-# Public command registry
+# Command registries (≈ forgit's PUBLIC_COMMANDS / PRIVATE_COMMANDS)
+# Alphabetised so this block diffs cleanly against bin/git-forgit.
 # ---------------------------------------------------------------------------
 declare -a FORBUT_PUBLIC_COMMANDS=(
-    switch
-    log
-    diff
     assign
+    diff
     discard
+    log
     reorder
+    switch
 )
 
 # Private commands (used by fzf callbacks, not user-facing)
 declare -a FORBUT_PRIVATE_COMMANDS=(
-    preview
     enter
+    preview
 )
 
 # ---------------------------------------------------------------------------

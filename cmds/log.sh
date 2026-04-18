@@ -9,52 +9,16 @@
 #
 # Maps to: but log / but show <commit>
 # Forgit equivalent: forgit::log
+#
+# Function ordering mirrors forgit/cmds/log.sh:
+#   _forbut_log_preview   →  preview helper (≈ _forgit_log_preview)
+#   _forbut_log_enter     →  enter helper   (≈ _forgit_log_enter)
+#   _forbut_git_log       →  git wrapper    (≈ _forgit_git_log)
+#   _forbut_log           →  main entry     (≈ _forgit_log) — LAST
 
 # Git log format — ported from forgit's default.
 # %x1f%x1e encodes the _fbsep separator (US + RS) as native git format escapes.
 _FORBUT_LOG_FORMAT='%C(auto)%h%d %s %C(black)%C(bold)%cr%Creset%x1f%x1e%h'
-
-_forbut_log() {
-    local branch="${1:-}"
-
-    local header
-    header="${FORBUT_COLOR_BOLD}Commit log${FORBUT_COLOR_RESET}  "
-    header+="${FORBUT_COLOR_DIM}enter${FORBUT_COLOR_RESET}=show commit  "
-    header+="${FORBUT_COLOR_DIM}ctrl-y${FORBUT_COLOR_RESET}=copy hash  "
-    header+="${FORBUT_COLOR_DIM}ctrl-/${FORBUT_COLOR_RESET}=toggle preview"
-
-    local preview_cmd="$FORBUT preview log_preview {}"
-
-    # fzf returns the clean short SHA (payload). Enter dispatches to
-    # _forbut_log_enter; ctrl-y copies via the shared yank helper.
-    local sha
-    sha=$(
-        _forbut_log_list "$branch" |
-            _forbut_fzf FORBUT_LOG_FZF_OPTS \
-                --delimiter="$_fbsep" \
-                --with-nth=1 \
-                --accept-nth=2 \
-                --header="$header" \
-                --preview="$preview_cmd" \
-                --bind="ctrl-y:execute-silent(printf %s {} | ${FORBUT_COPY_CMD:-pbcopy} 2>/dev/null)" \
-                --bind="enter:execute($FORBUT enter log_enter {})" \
-                --no-sort
-    )
-    # sha is discarded — the action already ran via the enter bind.
-}
-
-# ---------------------------------------------------------------------------
-# List commits as _fbsep-delimited rows
-# ---------------------------------------------------------------------------
-_forbut_log_list() {
-    local branch="${1:-}"
-    local args=(--graph --color=always --format="$_FORBUT_LOG_FORMAT" --abbrev-commit --date=relative -200)
-    if [[ -n $branch ]]; then
-        git log "${args[@]}" "$branch" 2>/dev/null
-    else
-        git log "${args[@]}" 2>/dev/null
-    fi
-}
 
 # ---------------------------------------------------------------------------
 # Preview: show the commit diff
@@ -109,4 +73,49 @@ _forbut_log_enter() {
     fi
 
     git show --color=always "$commit_id" 2>/dev/null | eval "$enter_pager"
+}
+
+# ---------------------------------------------------------------------------
+# List commits as _fbsep-delimited rows (≈ _forgit_git_log)
+# ---------------------------------------------------------------------------
+_forbut_git_log() {
+    local branch="${1:-}"
+    local args=(--graph --color=always --format="$_FORBUT_LOG_FORMAT" --abbrev-commit --date=relative -200)
+    if [[ -n $branch ]]; then
+        git log "${args[@]}" "$branch" 2>/dev/null
+    else
+        git log "${args[@]}" 2>/dev/null
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# git commit viewer (main entry — comes LAST, mirroring forgit)
+# ---------------------------------------------------------------------------
+_forbut_log() {
+    local branch="${1:-}"
+
+    local header
+    header="${FORBUT_COLOR_BOLD}Commit log${FORBUT_COLOR_RESET}  "
+    header+="${FORBUT_COLOR_DIM}enter${FORBUT_COLOR_RESET}=show commit  "
+    header+="${FORBUT_COLOR_DIM}ctrl-y${FORBUT_COLOR_RESET}=copy hash  "
+    header+="${FORBUT_COLOR_DIM}ctrl-/${FORBUT_COLOR_RESET}=toggle preview"
+
+    local preview_cmd="$FORBUT preview log_preview {}"
+
+    # fzf returns the clean short SHA (payload). Enter dispatches to
+    # _forbut_log_enter; ctrl-y copies via the shared yank helper.
+    local sha
+    sha=$(
+        _forbut_git_log "$branch" |
+            _forbut_fzf FORBUT_LOG_FZF_OPTS \
+                --delimiter="$_fbsep" \
+                --with-nth=1 \
+                --accept-nth=2 \
+                --header="$header" \
+                --preview="$preview_cmd" \
+                --bind="ctrl-y:execute-silent(printf %s {} | ${FORBUT_COPY_CMD:-pbcopy} 2>/dev/null)" \
+                --bind="enter:execute($FORBUT enter log_enter {})" \
+                --no-sort
+    )
+    # sha is discarded — the action already ran via the enter bind.
 }

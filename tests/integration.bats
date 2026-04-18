@@ -172,11 +172,11 @@ setup() {
 }
 
 # ---------------------------------------------------------------------------
-# _forbut_diff_file_list against real but output
+# _forbut_diff_view against real but output
 # ---------------------------------------------------------------------------
 @test "integration: diff_file_list emits unassigned + assigned + committed rows" {
     local out
-    out=$(_forbut_diff_file_list)
+    out=$(_forbut_diff_view)
     [[ -n $out ]]
     echo "$out" | grep -qF '(unassigned)'
     echo "$out" | grep -q 'commit:' ||
@@ -185,25 +185,25 @@ setup() {
 
 @test "integration: diff_file_list all rows have valid _fbsep delimiter" {
     local out bad
-    out=$(_forbut_diff_file_list)
+    out=$(_forbut_diff_view)
     bad=$(echo "$out" |
         awk -v FS="$_fbsep" 'NF < 2 || length($2) == 0 { print; c++ } END { exit (c>0?1:0) }') || true
     [[ -z $bad ]]
 }
 
 # ---------------------------------------------------------------------------
-# _forbut_switch_list against real but output
+# _forbut_branch_list against real but output
 # ---------------------------------------------------------------------------
 @test "integration: switch_list emits at least one applied branch" {
     local out count
-    out=$(_forbut_switch_list)
+    out=$(_forbut_branch_list)
     count=$(echo "$out" | awk -v FS="$_fbsep" 'NF >= 2 { n++ } END { print n+0 }')
     [[ $count -ge 1 ]]
 }
 
 @test "integration: switch_list payload is a valid branch name" {
     local payload
-    payload=$(_forbut_switch_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
+    payload=$(_forbut_branch_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
     # Must not contain ANSI escapes, markers, or spaces
     [[ -n $payload ]]
     [[ $payload != *$'\x1b'* ]]
@@ -212,21 +212,21 @@ setup() {
 }
 
 @test "integration: switch_list includes our seeded feature/ branch" {
-    _forbut_switch_list | grep -qE "${_fbsep}feature/(alpha|beta)\$"
+    _forbut_branch_list | grep -qE "${_fbsep}feature/(alpha|beta)\$"
 }
 
 # ---------------------------------------------------------------------------
-# _forbut_log_list against real git log
+# _forbut_git_log against real git log
 # ---------------------------------------------------------------------------
 @test "integration: log_list emits at least one commit row" {
     local count
-    count=$(_forbut_log_list | awk -v FS="$_fbsep" 'NF >= 2 { n++ } END { print n+0 }')
+    count=$(_forbut_git_log | awk -v FS="$_fbsep" 'NF >= 2 { n++ } END { print n+0 }')
     [[ $count -ge 1 ]]
 }
 
 @test "integration: log_list payload is a short git SHA" {
     local payload
-    payload=$(_forbut_log_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
+    payload=$(_forbut_git_log | head -1 | awk -v FS="$_fbsep" '{print $2}')
     [[ $payload =~ ^[a-f0-9]{7,}$ ]]
 }
 

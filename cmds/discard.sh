@@ -8,7 +8,39 @@
 #
 # Maps to: but hunk discard <target>  /  git checkout -- <file>
 # Forgit equivalent: forgit::clean + forgit::checkout::file
+#
+# Function ordering mirrors forgit/cmds/clean.sh:
+#   _forbut_discard_preview  →  preview helper (≈ _forgit_clean_preview)
+#   _forbut_discard          →  main entry     (≈ _forgit_clean) — LAST
 
+# ---------------------------------------------------------------------------
+# Preview: show what would be discarded (CLI ID or file path)
+# ---------------------------------------------------------------------------
+_forbut_discard_preview() {
+    local item_ref
+    if [[ $1 == *"$_fbsep"* ]]; then
+        item_ref="${1#*"$_fbsep"}"
+    else
+        item_ref="$1"
+    fi
+    [[ -z $item_ref ]] && return
+
+    local preview_pager
+    preview_pager=$(_forbut_get_pager diff)
+
+    local but_output
+    but_output=$(_forbut_but diff --no-tui "$item_ref")
+    if [[ -n $but_output ]]; then
+        echo "$but_output" | eval "$preview_pager"
+        return
+    fi
+
+    git diff --color=always -- "$item_ref" 2>/dev/null | eval "$preview_pager"
+}
+
+# ---------------------------------------------------------------------------
+# but hunk-discard selector (main entry — comes LAST, mirroring forgit)
+# ---------------------------------------------------------------------------
 _forbut_discard() {
     local header
     header="${FORBUT_COLOR_BOLD}Discard changes${FORBUT_COLOR_RESET}  "
@@ -83,29 +115,4 @@ _forbut_discard() {
         _forbut_error "Failed to discard one or more items."
     fi
     return $rc
-}
-
-# ---------------------------------------------------------------------------
-# Preview: show what would be discarded (CLI ID or file path)
-# ---------------------------------------------------------------------------
-_forbut_discard_preview() {
-    local item_ref
-    if [[ $1 == *"$_fbsep"* ]]; then
-        item_ref="${1#*"$_fbsep"}"
-    else
-        item_ref="$1"
-    fi
-    [[ -z $item_ref ]] && return
-
-    local preview_pager
-    preview_pager=$(_forbut_get_pager diff)
-
-    local but_output
-    but_output=$(_forbut_but diff --no-tui "$item_ref")
-    if [[ -n $but_output ]]; then
-        echo "$but_output" | eval "$preview_pager"
-        return
-    fi
-
-    git diff --color=always -- "$item_ref" 2>/dev/null | eval "$preview_pager"
 }

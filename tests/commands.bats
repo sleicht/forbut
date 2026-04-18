@@ -63,7 +63,7 @@ count_delimited_rows() {
 }
 
 @test "all _forbut_*_preview functions are defined" {
-    for fn in switch_preview log_preview diff_preview assign_preview discard_preview; do
+    for fn in branch_preview log_preview diff_preview assign_preview discard_preview; do
         declare -f "_forbut_$fn" >/dev/null
     done
 }
@@ -96,66 +96,66 @@ count_delimited_rows() {
 }
 
 # ===========================================================================
-# _forbut_diff_file_list — unassigned + assigned + committed
+# _forbut_diff_view — unassigned + assigned + committed
 # ===========================================================================
 @test "diff_file_list emits unassigned + assigned + committed rows" {
     # Fixture: 3 unassigned + 1 assigned + 4 committed = 8 rows
     local count
-    count=$(_forbut_diff_file_list | count_delimited_rows)
+    count=$(_forbut_diff_view | count_delimited_rows)
     [[ $count -eq 8 ]]
 }
 
 @test "diff_file_list labels unassigned rows" {
-    _forbut_diff_file_list | grep -qF '(unassigned)'
+    _forbut_diff_view | grep -qF '(unassigned)'
 }
 
 @test "diff_file_list labels staged rows with arrow to stack" {
-    _forbut_diff_file_list | grep -qF 'staged →'
+    _forbut_diff_view | grep -qF 'staged →'
 }
 
 @test "diff_file_list includes commit message in location tag" {
-    _forbut_diff_file_list | grep -qF 'commit: alpha commit 1'
+    _forbut_diff_view | grep -qF 'commit: alpha commit 1'
 }
 
 @test "diff_file_list committed payloads use commit-prefixed cliIds" {
     # Fixture commit cliIds are '35:rl', '35:zu', etc. — check format.
     local out
-    out=$(_forbut_diff_file_list)
+    out=$(_forbut_diff_view)
     echo "$out" | grep -qE "${_fbsep}35:[a-z]+$"
 }
 
 # ===========================================================================
-# _forbut_switch_list — JSON path (real but branch list --all -j shape)
+# _forbut_branch_list — JSON path (real but branch list --all -j shape)
 # ===========================================================================
 @test "switch_list extracts applied branch from appliedStacks[].heads[]" {
-    _forbut_switch_list | grep -q "${_fbsep}feature/alpha"
+    _forbut_branch_list | grep -q "${_fbsep}feature/alpha"
 }
 
 @test "switch_list display shows [applied] tag after ANSI strip" {
-    _forbut_switch_list | _forbut_strip_ansi | grep -q '\[applied\] feature/alpha'
+    _forbut_branch_list | _forbut_strip_ansi | grep -q '\[applied\] feature/alpha'
 }
 
 @test "switch_list payload exactly equals the branch name (no markers/ANSI)" {
     local payload
-    payload=$(_forbut_switch_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
+    payload=$(_forbut_branch_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
     [[ $payload == "feature/alpha" ]]
 }
 
 # ===========================================================================
-# _forbut_log_list — exercises the %x1f%x1e embedded separator
+# _forbut_git_log — exercises the %x1f%x1e embedded separator
 # ===========================================================================
 @test "log_list emits rows with embedded _fbsep (from forbut's own git log)" {
     # log.sh uses git log, so it works inside any real git repo with commits.
     cd "$FORBUT_INSTALL_DIR"
     local count
-    count=$(_forbut_log_list | count_delimited_rows)
+    count=$(_forbut_git_log | count_delimited_rows)
     [[ $count -gt 0 ]]
 }
 
 @test "log_list first-row payload is a short git SHA" {
     cd "$FORBUT_INSTALL_DIR"
     local payload
-    payload=$(_forbut_log_list | head -1 | awk -v FS="$_fbsep" '{print $2}')
+    payload=$(_forbut_git_log | head -1 | awk -v FS="$_fbsep" '{print $2}')
     [[ $payload =~ ^[a-f0-9]{7,}$ ]]
 }
 

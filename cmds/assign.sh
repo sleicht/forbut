@@ -7,7 +7,7 @@
 # Flow:
 #   1. Select one or more unassigned changes via _forbut_unassigned_list
 #      → fzf returns payloads (cli_ids).
-#   2. Select a target branch via _forbut_switch_list → fzf returns
+#   2. Select a target branch via _forbut_branch_list → fzf returns
 #      payload (branch name).
 #   3. Execute `but stage <cli_ids> <branch>`.
 #
@@ -16,7 +16,40 @@
 #
 # Maps to: but stage <hunk_ids> <branch>
 # Forgit equivalent: forgit::add (but more powerful with virtual branches)
+#
+# Function ordering mirrors forgit/cmds/add.sh:
+#   _forbut_assign_preview  →  preview helper (≈ _forgit_add_preview)
+#   _forbut_assign          →  main entry     (≈ _forgit_add) — LAST
 
+# ---------------------------------------------------------------------------
+# Preview: show the diff for a single hunk payload (CLI ID)
+# ---------------------------------------------------------------------------
+_forbut_assign_preview() {
+    local hunk_ref
+    if [[ $1 == *"$_fbsep"* ]]; then
+        hunk_ref="${1#*"$_fbsep"}"
+    else
+        hunk_ref="$1"
+    fi
+    [[ -z $hunk_ref ]] && return
+
+    local preview_pager
+    preview_pager=$(_forbut_get_pager diff)
+
+    local but_output
+    but_output=$(_forbut_but diff --no-tui "$hunk_ref")
+    if [[ -n $but_output ]]; then
+        echo "$but_output" | eval "$preview_pager"
+        return
+    fi
+
+    # Fallback for pure-git repos: treat payload as a file path.
+    git diff --color=always -- "$hunk_ref" 2>/dev/null | eval "$preview_pager"
+}
+
+# ---------------------------------------------------------------------------
+# but stage hunk-to-branch selector (main entry — comes LAST, mirroring forgit)
+# ---------------------------------------------------------------------------
 _forbut_assign() {
     local header
     header="${FORBUT_COLOR_BOLD}Assign hunks to branch${FORBUT_COLOR_RESET}  "
@@ -56,7 +89,7 @@ _forbut_assign() {
         return 0
     fi
 
-    # Step 2: Pick the target branch. _forbut_switch_list reuses the same
+    # Step 2: Pick the target branch. _forbut_branch_list reuses the same
     # display/payload contract — branch name comes back clean.
     local branch_header
     branch_header="${FORBUT_COLOR_BOLD}Select target branch${FORBUT_COLOR_RESET}  "
@@ -64,13 +97,13 @@ _forbut_assign() {
 
     local target_branch
     target_branch=$(
-        _forbut_switch_list |
+        _forbut_branch_list |
             _forbut_fzf FORBUT_ASSIGN_BRANCH_FZF_OPTS \
                 --delimiter="$_fbsep" \
                 --with-nth=1 \
                 --accept-nth=2 \
                 --header="$branch_header" \
-                --preview="$FORBUT preview switch_preview {}" \
+                --preview="$FORBUT preview branch_preview {}" \
                 --no-multi
     )
 
@@ -91,30 +124,4 @@ _forbut_assign() {
     fi
 
     return $exit_code
-}
-
-# ---------------------------------------------------------------------------
-# Preview: show the diff for a single hunk payload (CLI ID)
-# ---------------------------------------------------------------------------
-_forbut_assign_preview() {
-    local hunk_ref
-    if [[ $1 == *"$_fbsep"* ]]; then
-        hunk_ref="${1#*"$_fbsep"}"
-    else
-        hunk_ref="$1"
-    fi
-    [[ -z $hunk_ref ]] && return
-
-    local preview_pager
-    preview_pager=$(_forbut_get_pager diff)
-
-    local but_output
-    but_output=$(_forbut_but diff --no-tui "$hunk_ref")
-    if [[ -n $but_output ]]; then
-        echo "$but_output" | eval "$preview_pager"
-        return
-    fi
-
-    # Fallback for pure-git repos: treat payload as a file path.
-    git diff --color=always -- "$hunk_ref" 2>/dev/null | eval "$preview_pager"
 }
