@@ -27,12 +27,7 @@
 _forbut_diff_preview() {
     # fzf {} gives the full original line; extract the payload (field 2 after _fbsep).
     local ref
-    if [[ $1 == *"$_fbsep"* ]]; then
-        ref="${1#*"$_fbsep"}"
-    else
-        ref="$1"
-    fi
-    [[ -z $ref ]] && return
+    ref=$(echo "$1" | _forbut_extract_payload) || return
 
     local preview_pager
     preview_pager=$(_forbut_get_pager diff)
@@ -70,12 +65,7 @@ _forbut_diff_preview() {
 _forbut_diff_enter() {
     # fzf {} gives the full original line; extract the payload (field 2 after _fbsep).
     local ref
-    if [[ $1 == *"$_fbsep"* ]]; then
-        ref="${1#*"$_fbsep"}"
-    else
-        ref="$1"
-    fi
-    [[ -z $ref ]] && return
+    ref=$(echo "$1" | _forbut_extract_payload) || return
 
     local enter_pager
     enter_pager=$(_forbut_get_pager enter)

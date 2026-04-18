@@ -137,10 +137,34 @@ setup() {
     [[ $out == "yellow" ]]
 }
 
-@test "_forbut_extract_sha pulls first hash" {
+@test "_forbut_extract_payload returns field 2 when row contains _fbsep" {
     local out
-    out=$(echo "deadbeef01 some commit message" | _forbut_extract_sha)
-    [[ $out == "deadbeef01" ]]
+    out=$(echo "coloured display${_fbsep}payload123" | _forbut_extract_payload)
+    [[ $out == "payload123" ]]
+}
+
+@test "_forbut_extract_payload returns input verbatim when row has no separator" {
+    local out
+    out=$(echo "bare_value" | _forbut_extract_payload)
+    [[ $out == "bare_value" ]]
+}
+
+@test "_forbut_extract_payload returns non-zero on empty input" {
+    run bash -c 'source "$FORBUT_INSTALL_DIR/lib/utils.sh"; printf "" | _forbut_extract_payload'
+    [[ $status -ne 0 ]]
+    [[ -z $output ]]
+}
+
+@test "_forbut_extract_payload returns non-zero when payload after _fbsep is empty" {
+    run bash -c 'source "$FORBUT_INSTALL_DIR/lib/utils.sh"; printf "display%s" "$_fbsep" | _forbut_extract_payload'
+    [[ $status -ne 0 ]]
+    [[ -z $output ]]
+}
+
+@test "_forbut_extract_payload preserves payloads containing spaces" {
+    local out
+    out=$(echo "display${_fbsep}path with spaces" | _forbut_extract_payload)
+    [[ $out == "path with spaces" ]]
 }
 
 @test "_forbut_extract_branch_name strips current marker" {

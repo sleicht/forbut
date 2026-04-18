@@ -124,16 +124,43 @@ _forbut_emojify() {
 }
 
 # ---------------------------------------------------------------------------
-# SHA helpers (≈ forgit's _forgit_extract_sha / _forgit_yank_sha)
+# Yank helper (≈ forgit's _forgit_yank_sha)
 # ---------------------------------------------------------------------------
-# Pull the first git SHA from stdin and strip whitespace.
-_forbut_extract_sha() {
-    grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]'
+# Copy the SHA from a _fbsep-delimited row in $1 to the clipboard.
+_forbut_yank_sha() {
+    echo "$1" | _forbut_extract_payload | ${FORBUT_COPY_CMD:-pbcopy}
 }
 
-# Copy the first SHA in $1 to the clipboard.
-_forbut_yank_sha() {
-    echo "$1" | _forbut_extract_sha | ${FORBUT_COPY_CMD:-pbcopy}
+# ---------------------------------------------------------------------------
+# Payload extraction (forbut-specific — no direct forgit analog)
+# ---------------------------------------------------------------------------
+# Extract the machine-payload (field 2) from a _fbsep-delimited fzf row.
+#
+# fzf passes `{}` — the full original row, shaped as
+#     <coloured display>${_fbsep}<payload>
+# — to --preview / --bind execute callbacks. This helper reads the row on
+# stdin, strips the display prefix, and prints just the payload. If the row
+# contains no separator (e.g. a caller that already passed the bare
+# payload), the input is echoed verbatim.
+#
+# Reads stdin so it composes with pipes, matching the style of
+# _forbut_strip_ansi / _forbut_emojify.
+#
+# Returns non-zero when the resulting payload is empty, so callers can
+# early-exit with `|| return` in one line:
+#
+#     local ref
+#     ref=$(echo "$1" | _forbut_extract_payload) || return
+_forbut_extract_payload() {
+    local row payload
+    IFS= read -r row || row=""
+    if [[ $row == *"$_fbsep"* ]]; then
+        payload="${row#*"$_fbsep"}"
+    else
+        payload="$row"
+    fi
+    [[ -z $payload ]] && return 1
+    printf '%s' "$payload"
 }
 
 # ---------------------------------------------------------------------------
@@ -169,10 +196,9 @@ _forbut_quote_files() {
     echo "${files[*]}"
 }
 
+_forbut_log_graph_enable=${FORBUT_LOG_GRAPH_ENABLE:-"true"}
 # Git log format — ported from forgit's default.
 # %x1f%x1e encodes the _fbsep separator (US + RS) as native git format escapes.
-
-_forbut_log_graph_enable=${FORBUT_LOG_GRAPH_ENABLE:-"true"}
 _forbut_log_format=${FORBUT_LOG_FORMAT:-"%C(auto)%h%d %s %C(black)%C(bold)%cr%Creset%x1f%x1e%h"}
 _forbut_log_preview_options=("--graph" "--pretty=format:$_forbut_log_format" "--color=always" "--abbrev-commit" "--date=relative")
 

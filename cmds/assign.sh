@@ -26,12 +26,7 @@
 # ---------------------------------------------------------------------------
 _forbut_assign_preview() {
     local hunk_ref
-    if [[ $1 == *"$_fbsep"* ]]; then
-        hunk_ref="${1#*"$_fbsep"}"
-    else
-        hunk_ref="$1"
-    fi
-    [[ -z $hunk_ref ]] && return
+    hunk_ref=$(echo "$1" | _forbut_extract_payload) || return
 
     local preview_pager
     preview_pager=$(_forbut_get_pager diff)

@@ -18,12 +18,7 @@
 # ---------------------------------------------------------------------------
 _forbut_discard_preview() {
     local item_ref
-    if [[ $1 == *"$_fbsep"* ]]; then
-        item_ref="${1#*"$_fbsep"}"
-    else
-        item_ref="$1"
-    fi
-    [[ -z $item_ref ]] && return
+    item_ref=$(echo "$1" | _forbut_extract_payload) || return
 
     local preview_pager
     preview_pager=$(_forbut_get_pager diff)

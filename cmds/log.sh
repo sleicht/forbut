@@ -20,14 +20,8 @@
 # Preview: show the commit diff
 # ---------------------------------------------------------------------------
 _forbut_log_preview() {
-    # fzf {} gives the full original line; extract the payload (field 2 after _fbsep).
     local commit_id
-    if [[ $1 == *"$_fbsep"* ]]; then
-        commit_id="${1#*"$_fbsep"}"
-    else
-        commit_id="$1"
-    fi
-    [[ -z $commit_id ]] && return
+    commit_id=$(echo "$1" | _forbut_extract_payload) || return
 
     local preview_pager
     preview_pager=$(_forbut_get_pager show)
@@ -48,14 +42,8 @@ _forbut_log_preview() {
 # Enter: open full-screen interactive commit diff
 # ---------------------------------------------------------------------------
 _forbut_log_enter() {
-    # fzf {} gives the full original line; extract the payload (field 2 after _fbsep).
     local commit_id
-    if [[ $1 == *"$_fbsep"* ]]; then
-        commit_id="${1#*"$_fbsep"}"
-    else
-        commit_id="$1"
-    fi
-    [[ -z $commit_id ]] && return
+    commit_id=$(echo "$1" | _forbut_extract_payload) || return
 
     local enter_pager
     enter_pager=$(_forbut_get_pager enter)
