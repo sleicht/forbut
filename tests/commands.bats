@@ -168,6 +168,67 @@ count_delimited_rows() {
     [[ $output == "called:myarg" ]]
 }
 
+@test "log binds Enter through the private enter dispatcher" {
+    local captured selected
+    _forbut_git_log() {
+        printf 'commit row%sabc1234\n' "$_fbsep"
+    }
+    _forbut_fzf() {
+        printf '%s\n' "$@" >"$BATS_TEST_TMPDIR/fzf-args.txt"
+        printf 'abc1234\n'
+    }
+
+    run _forbut_log
+    [[ $status -eq 0 ]]
+
+    captured=$(cat "$BATS_TEST_TMPDIR/fzf-args.txt")
+    [[ $captured == *'--bind=enter:execute('*"$FORBUT enter log_enter {}"*')'* ]]
+}
+
+@test "log_preview prefers but show plus but diff before git fallback" {
+    _forbut_but() {
+        if [[ $1 == show ]]; then
+            printf 'commit abc1234\nAuthor: Test\n'
+            return 0
+        fi
+        if [[ $1 == diff ]] && [[ $2 == --no-tui ]]; then
+            printf '@@ -1 +1 @@\n-file\n+file\n'
+            return 0
+        fi
+        return 1
+    }
+    _forbut_colorize_but_diff() {
+        sed 's/^@@/[color]@@/'
+    }
+    git() {
+        printf 'git fallback should not run\n'
+        return 0
+    }
+
+    FORBUT_SHOW_PAGER=cat run _forbut_log_preview "commit row${_fbsep}abc1234"
+    [[ $status -eq 0 ]]
+    [[ $output == *'commit abc1234'* ]]
+    [[ $output == *'[color]@@ -1 +1 @@'* ]]
+    [[ $output != *'git fallback should not run'* ]]
+}
+
+@test "log_preview falls back to git show when but output is unavailable" {
+    _forbut_but() {
+        return 1
+    }
+    git() {
+        if [[ $1 == show ]]; then
+            printf '\033[31mdiff --git a/file b/file\033[0m\n'
+            return 0
+        fi
+        return 1
+    }
+
+    FORBUT_SHOW_PAGER=cat run _forbut_log_preview "commit row${_fbsep}abc1234"
+    [[ $status -eq 0 ]]
+    [[ $output == *$'\033[31mdiff --git a/file b/file\033[0m'* ]]
+}
+
 # ===========================================================================
 # Schema drift tripwire
 # ===========================================================================
