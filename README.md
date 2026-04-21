@@ -1,18 +1,10 @@
-<h1 align="center">🧈 forbut</h1>
-<p align="center">
-    <em>Utility tool for using <a href="https://docs.gitbutler.com/cli">GitButler's <code>but</code> CLI</a> interactively. Powered by <a href="https://github.com/junegunn/fzf">junegunn/fzf</a>.</em>
-</p>
+# 🧈 forbut
 
-<p align="center">
-    <a href="LICENSE">
-        <img src="https://img.shields.io/badge/License-MIT-brightgreen.svg"/>
-    </a>
-    <a href="https://img.shields.io/badge/Shell-Bash%20%7C%20Zsh%20%7C%20Fish-blue">
-        <img src="https://img.shields.io/badge/Shell-Bash%20%7C%20Zsh%20%7C%20Fish-blue"/>
-    </a>
-    <a href="https://github.com/pre-commit/pre-commit">
-        <img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white" alt="pre-commit" />
-</p>
+_Utility tool for using [GitButler's `but` CLI](https://docs.gitbutler.com/cli) interactively. Powered by [junegunn/fzf](https://github.com/junegunn/fzf)._
+
+[![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
+![Shell](https://img.shields.io/badge/Shell-Bash%20%7C%20Zsh%20%7C%20Fish-blue)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 
 This tool is designed to help you use [GitButler](https://gitbutler.com) more efficiently from the terminal.
 It's **lightweight**, **easy to use**, and heavily inspired by [forgit](https://github.com/wfxr/forgit).
@@ -28,7 +20,7 @@ uncommitted hunks and assign them to any virtual branch.
 | Command | Description                                                                  |
 |---------|------------------------------------------------------------------------------|
 | `fbs`   | Interactive virtual branch / stack switcher (`but apply` / `but unapply`)    |
-| `fbl`   | Interactive `git log` viewer with diff preview                               |
+| `fbl`   | Interactive `git log` viewer with colorful commit preview and file selector  |
 | `fbd`   | Interactive `but diff` viewer across unassigned + staged + committed changes |
 | `fba`   | Interactive hunk → stack assignment (`but stage` → `but commit`)             |
 | `fbD`   | Interactive hunk / file discard with confirmation                            |
@@ -100,6 +92,10 @@ forbut diff
 
 You can change the default aliases by exporting these variables **before** sourcing the forbut shell plugin.
 (To disable all aliases, set the `FORBUT_NO_ALIASES` flag.)
+
+By default, `fbl` opens the commit log; its preview pane shows the selected
+commit with color, and pressing `Enter` opens a second picker for the files
+changed by that commit.
 
 ```bash
 FORBUT_SWITCH_ALIAS=fbs
@@ -192,16 +188,19 @@ grab evidence from this log.
 ⌨ Keybindings
 ---------------
 
-|              Key               | Action                                   |
-|:------------------------------:|------------------------------------------|
-|        <kbd>Enter</kbd>        | Accept / execute primary action          |
-|         <kbd>Tab</kbd>         | Toggle selection (multi-select commands) |
-| <kbd>Ctrl</kbd> - <kbd>A</kbd> | Select all (multi-select commands)       |
-| <kbd>Ctrl</kbd> - <kbd>/</kbd> | Toggle preview pane                      |
-| <kbd>Ctrl</kbd> - <kbd>D</kbd> | Scroll preview down                      |
-| <kbd>Ctrl</kbd> - <kbd>U</kbd> | Scroll preview up                        |
-| <kbd>Ctrl</kbd> - <kbd>Y</kbd> | Copy commit hash to clipboard (`fbl`)    |
-| <kbd>Ctrl</kbd> - <kbd>X</kbd> | Unapply branch (`fbs`)                   |
+|              Key               | Action                                                 |
+|:------------------------------:|--------------------------------------------------------|
+|        <kbd>Enter</kbd>        | Accept / execute primary action                        |
+|         <kbd>Tab</kbd>         | Toggle selection (multi-select commands)               |
+| <kbd>Ctrl</kbd> - <kbd>A</kbd> | Select all (multi-select commands)                     |
+| <kbd>Ctrl</kbd> - <kbd>/</kbd> | Toggle preview pane                                    |
+| <kbd>Ctrl</kbd> - <kbd>D</kbd> | Scroll preview down                                    |
+| <kbd>Ctrl</kbd> - <kbd>U</kbd> | Scroll preview up                                      |
+| <kbd>Ctrl</kbd> - <kbd>Y</kbd> | Copy the selected commit hash to the clipboard (`fbl`) |
+| <kbd>Ctrl</kbd> - <kbd>X</kbd> | Unapply branch (`fbs`)                                 |
+
+`fbl` uses `Enter` twice: first to open the commit's file list, then again to
+open the diff for the selected file.
 
 📦 Optional dependencies
 -------------------------
@@ -214,6 +213,8 @@ grab evidence from this log.
 
 - `fbd` supports an optional target argument: `fbd <commit>` or `fbd <stack>` shows the file list for that specific diff target.
 - `fbl` accepts a branch name: `fbl feature/alpha` scopes the log to that branch.
+- Inside `fbl`, the preview prefers `but show` + `but diff --no-tui` for GitButler-style commit rendering and falls back to `git show` when needed.
+- After selecting a commit in `fbl`, a second fuzzy picker lets you drill into the files changed by that commit before opening the file diff.
 - forbut prefers `but`'s JSON output but transparently falls back to pure `git` in non-GitButler repositories — most commands work anywhere.
 
 📁 Project Structure
@@ -223,12 +224,13 @@ grab evidence from this log.
 forbut/
 ├── forbut.sh          # Shell plugin loader (functions + aliases)
 ├── bin/
-│   └── forbut         # Standalone CLI dispatcher
+│   └── git-forbut     # Standalone CLI dispatcher / git subcommand entrypoint
 ├── lib/
 │   └── utils.sh       # Shared helpers (fzf wrapper, pagers, schema assert, ...)
 ├── cmds/
 │   ├── switch.sh      # forbut::switch
 │   ├── log.sh         # forbut::log
+│   ├── show.sh        # shared commit/file viewer helpers used by log
 │   ├── diff.sh        # forbut::diff
 │   ├── assign.sh      # forbut::assign
 │   ├── discard.sh     # forbut::discard
