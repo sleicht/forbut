@@ -84,3 +84,22 @@ setup() {
     [[ $status -eq 1 ]]
     [[ $output == *"v0.2"* ]]
 }
+
+@test "forbut yank_sha dispatch copies the selected payload" {
+    local copy_file mock_bin
+    copy_file="$BATS_TEST_TMPDIR/copied.txt"
+    mock_bin="$BATS_TEST_TMPDIR/bin"
+    mkdir -p "$mock_bin"
+
+    cat >"$mock_bin/pbcopy" <<EOF
+#!/usr/bin/env bash
+cat >"$copy_file"
+EOF
+    chmod +x "$mock_bin/pbcopy"
+
+    PATH="$mock_bin:$PATH"
+    run "$FORBUT" yank_sha $'display\x1f\x1edeadbee'
+
+    [[ $status -eq 0 ]]
+    [[ "$(cat "$copy_file")" == "deadbee" ]]
+}

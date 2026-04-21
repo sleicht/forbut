@@ -121,6 +121,7 @@ PUBLIC_COMMANDS=(
 PRIVATE_COMMANDS=(
     "enter"
     "preview"
+    "yank_sha"
 )
 
 # ---------------------------------------------------------------------------
@@ -146,6 +147,11 @@ main() {
         enter)
             shift
             _forbut_enter "$@"
+            return $?
+            ;;
+        yank_sha)
+            shift
+            _forbut_yank_sha "$@"
             return $?
             ;;
     esac
