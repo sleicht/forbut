@@ -16,27 +16,6 @@
 #   _forbut_git_log       →  git wrapper    (≈ _forgit_git_log)
 #   _forbut_log           →  main entry     (≈ _forgit_log) — LAST
 
-# ---------------------------------------------------------------------------
-# Preview: show the commit diff
-# ---------------------------------------------------------------------------
-_forbut_log_commit_view() {
-    local commit_id="$1"
-    local show_output diff_output
-
-    show_output=$(_forbut_but show "$commit_id" 2>/dev/null)
-    diff_output=$(_forbut_but diff --no-tui "$commit_id" 2>/dev/null)
-
-    if [[ -n $show_output ]] || [[ -n $diff_output ]]; then
-        [[ -n $show_output ]] && printf '%s\n' "$show_output"
-        if [[ -n $diff_output ]]; then
-            printf '%s\n' "$diff_output" | _forbut_colorize_but_diff
-        fi
-        return 0
-    fi
-
-    git show --color=always "$commit_id" 2>/dev/null
-}
-
 _forbut_log_preview() {
     local commit_id
     commit_id=$(echo "$1" | _forbut_extract_payload) || return
@@ -45,7 +24,7 @@ _forbut_log_preview() {
     preview_pager=$(_forbut_get_pager show)
 
     local output
-    output=$(_forbut_log_commit_view "$commit_id")
+    output=$(_forbut_show_commit_view "$commit_id")
     if [[ -n $output ]]; then
         echo "$output" | eval "$preview_pager"
         return
@@ -58,16 +37,9 @@ _forbut_log_preview() {
 _forbut_log_enter() {
     local commit_id
     commit_id=$(echo "$1" | _forbut_extract_payload) || return
+    shift
 
-    local enter_pager
-    enter_pager=$(_forbut_get_pager enter)
-
-    local output
-    output=$(_forbut_log_commit_view "$commit_id")
-    if [[ -n $output ]]; then
-        echo "$output" | eval "$enter_pager"
-        return
-    fi
+    _forbut_show "$commit_id" "$@"
 }
 
 # ---------------------------------------------------------------------------

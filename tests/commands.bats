@@ -185,6 +185,63 @@ count_delimited_rows() {
     [[ $captured == *'--bind=enter:execute('*"$FORBUT enter log_enter {}"*')'* ]]
 }
 
+@test "log_enter opens a commit file selector" {
+    local captured
+    _forbut_show() {
+        printf '%s\n' "$@" >"$BATS_TEST_TMPDIR/log-enter-args.txt"
+    }
+
+    run _forbut_log_enter "commit row${_fbsep}abc1234" -- src/app.sh
+    [[ $status -eq 0 ]]
+
+    captured=$(cat "$BATS_TEST_TMPDIR/log-enter-args.txt")
+    [[ $captured == $'abc1234\n--\nsrc/app.sh' ]]
+}
+
+@test "show binds preview and enter to file helpers" {
+    local captured
+    _forbut_show_commit_file_rows() {
+        printf '[M] src/app.sh%s%s\n' "$_fbsep" 'src/app.sh'
+    }
+    _forbut_fzf() {
+        printf '%s\n' "$@" >"$BATS_TEST_TMPDIR/log-file-fzf-args.txt"
+    }
+
+    run _forbut_show abc1234 -- src/app.sh
+    [[ $status -eq 0 ]]
+
+    captured=$(cat "$BATS_TEST_TMPDIR/log-file-fzf-args.txt")
+    [[ $captured == *'--preview='*"$FORBUT preview show_file_preview {} abc1234"* ]]
+    [[ $captured == *'--bind=enter:execute('*"$FORBUT enter show_file_enter {} abc1234"*')'* ]]
+}
+
+@test "show_file_preview renders a file-specific commit diff" {
+    _forbut_show_file_view() {
+        printf 'diff for %s in %s\n' "$2" "$1"
+    }
+
+    FORBUT_SHOW_PAGER=cat run _forbut_show_file_preview "[M] src/app.sh${_fbsep}src/app.sh" abc1234
+    [[ $status -eq 0 ]]
+    [[ $output == 'diff for src/app.sh in abc1234' ]]
+}
+
+@test "show_file_view includes both rename paths for renamed files" {
+    git() {
+        if [[ $1 == show ]]; then
+            shift
+            printf '%s\n' "$@" >"$BATS_TEST_TMPDIR/log-file-view-git-args.txt"
+            printf 'renamed diff\n'
+            return 0
+        fi
+        return 1
+    }
+
+    run _forbut_show_file_view abc1234 $'src/old.sh\tsrc/new.sh'
+    [[ $status -eq 0 ]]
+    [[ $output == 'renamed diff' ]]
+    [[ $(cat "$BATS_TEST_TMPDIR/log-file-view-git-args.txt") == $'--color=always\nabc1234\n--\nsrc/old.sh\nsrc/new.sh' ]]
+}
+
 @test "log_preview prefers but show plus but diff before git fallback" {
     _forbut_but() {
         if [[ $1 == show ]]; then
