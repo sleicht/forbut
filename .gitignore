@@ -7,4 +7,5 @@ gen
 ## LLM
 .claude
 .forge
+.junie
 .omc
