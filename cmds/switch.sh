@@ -24,7 +24,8 @@
 # Preview: show branch details
 # ---------------------------------------------------------------------------
 _forbut_branch_preview() {
-    local branch="$1"
+    local branch
+    branch=$(echo "$1" | _forbut_extract_payload) || return
     [[ -z $branch ]] && return
 
     but branch show "$branch" -f 2>/dev/null || {

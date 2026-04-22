@@ -141,6 +141,22 @@ count_delimited_rows() {
     [[ $payload == "feature/alpha" ]]
 }
 
+@test "branch_preview extracts the branch payload from an fzf row" {
+    but() {
+        if [[ $1 == branch && $2 == show ]]; then
+            printf 'show:%s\n' "$3"
+            return 0
+        fi
+
+        echo "mock but: unhandled args: $*" >&2
+        return 2
+    }
+
+    run _forbut_branch_preview "  [local]   feature/angular-21-migration${_fbsep}feature/angular-21-migration"
+    [[ $status -eq 0 ]]
+    [[ $output == "show:feature/angular-21-migration" ]]
+}
+
 # ===========================================================================
 # _forbut_git_log — exercises the %x1f%x1e embedded separator
 # ===========================================================================
