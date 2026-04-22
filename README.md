@@ -43,12 +43,31 @@ git clone https://github.com/user/forbut.git ~/.forbut
 ~/.forbut/install.sh
 ```
 
+`install.sh` now installs the runtime plus CLI artifacts under your selected prefix:
+
+- `share/forbut/` — runtime payload (`forbut.sh`, `lib/`, `cmds/`, `bin/git-forbut`)
+- `bin/git-forbut` — symlinked entrypoint
+- `share/bash-completion/completions/git-forbut` — Bash completion
+- `share/zsh/site-functions/_git-forbut` — Zsh completion
+- `share/fish/vendor_completions.d/git-forbut.fish` — Fish completion
+- `share/man/man1/forbut.1` — generated manpage when `usage` is available
+
 Then add the following to your shell's config file:
 
 ```sh
 # Bash (~/.bashrc) / Zsh (~/.zshrc):
 [ -f $HOME/.local/share/forbut/forbut.sh ] && source $HOME/.local/share/forbut/forbut.sh
 ```
+
+If you want the installed manpage to be discoverable, add the prefix manpath too:
+
+```sh
+export MANPATH="$HOME/.local/share/man:$MANPATH"
+```
+
+Shell-specific completion loading depends on your shell setup, but the installer now
+places the checked-in completion scripts in standard prefix-relative locations so
+they can be picked up or sourced from the install target.
 
 ### Development (symlink) install
 
@@ -57,11 +76,35 @@ git clone https://github.com/user/forbut.git ~/src/forbut
 ~/src/forbut/install.sh --symlink
 ```
 
+### Development tooling with `mise`
+
+This repo now declares [`usage`](https://usage.jdx.dev) in `mise.toml`, so you can
+work with the CLI specs without installing it globally:
+
+```bash
+mise exec usage -- usage lint forbut.usage.kdl
+mise exec usage -- usage lint install.usage.kdl
+mise exec usage -- usage generate markdown -f forbut.usage.kdl --out-file /tmp/forbut.md
+mise exec usage -- usage generate markdown -f install.usage.kdl --out-file /tmp/install.md
+mise exec usage -- usage generate manpage -f forbut.usage.kdl --out-file /tmp/forbut.1
+```
+
+The current integration is intentionally light-weight:
+
+- `bin/git-forbut` remains the runtime entrypoint.
+- `forbut.usage.kdl` is the source for the main CLI's `usage` linting and generated artifacts.
+- `install.usage.kdl` is the source for the installer's `usage` linting and generated docs.
+- the existing hand-written shell completions in `completions/` remain authoritative and are what `install.sh` installs.
+
 ### Custom prefix
 
 ```bash
 ./install.sh --prefix=/opt/forbut
 ```
+
+That places the shell plugin at `/opt/forbut/share/forbut/forbut.sh`, the binary
+entrypoint at `/opt/forbut/bin/git-forbut`, completion assets under
+`/opt/forbut/share/`, and the optional manpage at `/opt/forbut/share/man/man1/forbut.1`.
 
 ### Uninstall
 

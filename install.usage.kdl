@@ -1,0 +1,19 @@
+// usage-cli spec for the forbut installer.
+// Keeps install.sh as the runtime implementation while enabling
+// linting plus generated installer docs from a single spec.
+
+name "forbut-install"
+bin "forbut-install"
+version "0.1.0"
+about "Install or uninstall forbut under a selected prefix"
+long_about "Installs the forbut runtime payload under a prefix-managed layout and can optionally distribute installer-facing artifacts such as generated docs. The installer surface stays separate from the main forbut CLI spec so install.sh can evolve without changing bin/git-forbut runtime behavior."
+
+flag "-h --help" help="Show help"
+flag "--prefix <dir>" help="Install prefix (defaults to $HOME/.local)"
+flag "--symlink" help="Symlink the runtime payload instead of copying it"
+flag "--uninstall" help="Remove the installed runtime payload and installer-managed artifacts"
+
+example "./install.sh" header="Default install" help="Install forbut into the default prefix"
+example "./install.sh --prefix=/opt/forbut" header="Custom prefix" help="Install forbut into a custom prefix"
+example "./install.sh --symlink" header="Development install" help="Install by symlinking the runtime payload for local development"
+example "./install.sh --uninstall" header="Uninstall" help="Remove forbut and installer-managed artifacts from the selected prefix"

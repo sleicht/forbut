@@ -1,0 +1,32 @@
+// usage-cli spec for forbut.
+// Keeps bin/git-forbut as the runtime entrypoint while enabling
+// linting plus generated docs/manpages/completions from a single spec.
+
+name "forbut"
+bin "forbut"
+version "0.1.0"
+about "Fuzzy UX for GitButler's but CLI"
+long_about "Interactive terminal workflows for GitButler, powered by fzf. This spec models the public CLI surface for `usage`-based linting and artifact generation while leaving the existing Bash runtime untouched. Useful environment variables include FORBUT_PAGER, FORBUT_PREVIEW_PAGER, FORBUT_FZF_DEFAULT_OPTS, FORBUT_NO_ALIASES, and per-command overrides such as FORBUT_LOG_FZF_OPTS, FORBUT_DIFF_FZF_OPTS, FORBUT_ASSIGN_FZF_OPTS, FORBUT_DISCARD_FZF_OPTS, FORBUT_SWITCH_FZF_OPTS, and FORBUT_REORDER_FZF_OPTS."
+
+flag "-h --help" help="Show help"
+flag "-v --version" help="Show version"
+
+example "forbut switch" header="Switch stacks" help="Interactively apply or unapply a virtual branch or stack"
+example "forbut log" header="Browse history" help="Inspect commit history with preview panes and file selection"
+example "forbut assign" header="Assign hunks" help="Pick uncommitted hunks and assign them to a stack"
+
+cmd "switch" help="Fuzzy-switch between virtual branches/stacks"
+cmd "log" help="Browse commit log across the current stack with diff preview"
+cmd "diff" help="Browse changed files with inline diff preview"
+cmd "assign" help="Fuzzy-select uncommitted hunks and assign them to a stack"
+cmd "discard" help="Fuzzy-select hunks/files to discard"
+
+cmd "reorder" help="Interactively reorder commits within a stack (planned)" {
+  example "forbut reorder" header="Planned command" help="Currently documented as a planned v0.2+ workflow"
+}
+
+// Internal dispatcher commands used by fzf callbacks.
+// These may be omitted from generated public docs later if desired.
+cmd "preview" help="Internal preview dispatcher used by fzf callbacks"
+cmd "enter" help="Internal enter action used by fzf callbacks"
+cmd "yank_sha" help="Internal action that copies the selected commit SHA"
